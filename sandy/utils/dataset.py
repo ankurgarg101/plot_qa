@@ -7,9 +7,15 @@ from glob import glob
 import numpy as np
 from skimage import io
 import json
+import nltk
 
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+from .indexer import Indexer
+
+pad_token = '<pad>'
+unk_token = '<unk>'
+max_bboxes = 30
 
 class PlotDataset(Dataset):
 
@@ -27,6 +33,8 @@ class PlotDataset(Dataset):
 		self.qa_dir = path.join(self.data_dir, 'qa')
 
 		self.split = args.split
+		self.use_dyn_dict = args.use_dyn_dict
+		self.args = args
 
 		assert path.exists(self.img_dir)
 		assert path.exists(self.meta_data_dir)
@@ -45,8 +53,13 @@ class PlotDataset(Dataset):
 		with open(path.join(self.qa_dir, '{}_qa.json'.format(self.split)), 'r') as qa_file:
 			qa_data = json.load(qa_file)
 
-		with open(path.join(self.meta_data_dir, '{}_metadata.json'.format(self.split)), 'r') as metadata_file:
-			self.metadata = json.load(metadata_file)
+		with open(path.join(self.meta_data_dir, '{}_metadata_lbl.json'.format(self.split)), 'r') as metadata_file:
+			metadata = json.load(metadata_file)
+
+		# Create a map of Metadata indexed by image instead of a list
+		self.metadata_dict = {}
+		for mt in metadata:
+			self.metadata_dict['image'] = mt 
 
 		# Create a Map from Question Id to Idx for __getitem__ to work correctly
 		self.qid2idx = {}
@@ -63,13 +76,116 @@ class PlotDataset(Dataset):
 		if args.debug:
 			print('Read {} Question-Answer Pairs'.format(len(self.idx2qid)))
 
-		# Process the Questions and Answers to Construct the dictionaries
+		# Index the Questions and Answers
+		self.index_answers()
+		self.index_questions()
 
-		self._process_answers()
+	def index_questions(self):
 
-	def _process_answers(self):
+		# Creates the Index for Questions
+		suffix = 'san'
+		if self.use_dyn_dict:
+			suffix += 'dy'
 
-		# Check for split to decide whether to label words as unknown or not
+		if self.split == 'train':
+			self.ques_indexer = Indexer()
+			
+			# Add the Pad and UNK tokens at the start
+			self.ques_indexer.get_index(pad_token)
+			self.ques_indexer.get_index(unk_token)
+
+			# If using the dynamic dictionary, add the bounding box token ids at the start of the dictionary.
+
+			if self.use_dyn_dict:
+				for bidx in range(max_bboxes):
+					self.ans_indexer.get_index('bbox_%02d'%bidx)
+
+			for qid in self.qa_dict:
+
+				qa = self.qa_dict[qid]
+				question_wrds = nltk.word_tokenize( qa['question'] )
+
+				if self.use_dyn_dict:
+					
+					# Check if the word exists in any bounding box
+
+					bbox_txt_metadata = self.metadata_dict[qa['image']]['texts']
+
+					for wrd in question_wrds:
+
+						isPresentInBbox = False
+						
+						for bbox_txt in bbox_txt_metadata:
+
+							if bbox_txt['text'] == wrd:
+
+								isPresentInBbox = True
+
+						if not isPresentInBbox:
+							self.ques_indexer.get_index(wrd) 
+
+				else:
+					# If not using dynamic dictionary, add all the words in the question in the dictionary
+					
+					for	wrd in question_wrds:
+						self.ques_indexer.get_index(wrd)
+					
+
+			# Save the Indexer to be used for 
+			self.ques_indexer.dump(path.join(self.args.idx_dir, 'question_indexer_{}.json'.format(suffix)))
+		else:
+
+			assert path.exists(path.join(self.args.idx_dir, 'question_indexer_{}.json'.format(suffix)))
+
+			# Just Load the Indexer from the given file path.
+			self.ques_indexer = Indexer(path.join(self.args.idx_dir, 'question_indexer_{}.json'.format(suffix)))
+
+	def index_answers(self):
+
+		# Creates the indexer for answers
+
+		suffix = 'san'
+		if self.use_dyn_dict:
+			suffix += 'dy'
+
+		if self.split == 'train':
+
+			self.ans_indexer = Indexer()
+
+			# Add the Pad and UNK tokens at the start
+			self.ans_indexer.get_index(pad_token)
+			self.ans_indexer.get_index(unk_token)
+
+			# If using the dynamic dictionary, add the bounding box token ids at the start of the dictionary.
+
+			if self.use_dyn_dict:
+				for bidx in range(max_bboxes):
+					self.ans_indexer.get_index('bbox_%02d'%bidx)
+
+			for qid in self.qa_dict:
+
+				qa = self.qa_dict[qid]
+
+				if self.use_dyn_dict:
+					# Check if answer belongs to a bounding box or not
+					if len(qa['answer_bbox']) == 0:
+						self.ans_indexer.get_index(qa['answer'])
+				else:
+					
+					# If not using dynamic dictionary, add all answers in the dictionary
+					
+					self.ans_indexer.get_index(qa['answer'])
+
+			# Save the Indexer to be used for 
+			self.ans_indexer.dump(path.join(self.args.idx_dir, 'answer_indexer_{}.json'.format(suffix)))
+
+		else:
+
+			assert path.exists(path.join(self.args.idx_dir, 'answer_indexer_{}.json'.format(suffix)))
+
+			# Just Load the Indexer from the given file path.
+			self.ans_indexer = Indexer(path.join(self.args.idx_dir, 'answer_indexer_{}.json'.format(suffix)))
+
 
 	def __len__(self):
 		return len(self.idx2qid)

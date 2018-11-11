@@ -8,7 +8,21 @@ class Indexer(object):
 		self.ints_to_objs = {}
 
 		if not (filepath == None):
-			
+			self.load(filepath)
+
+	def load(self, filepath):
+
+		with open(filepath, 'r') as idx_file:
+			data = json.load(idx_file)
+
+		self.objs_to_ints = data['objs_to_ints']
+		self.ints_to_objs = data['ints_to_objs']
+
+	def dump(self, filepath):
+
+		with open(filepath, 'w') as idx_file:
+			data = {'objs_to_ints': self.objs_to_ints, 'ints_to_objs': self.ints_to_objs}
+			json.dump(data, idx_file, indent=4)
 
 	def __repr__(self):
 		return str([str(self.get_object(i)) for i in range(0, len(self))])
