@@ -2,6 +2,8 @@
 Class definition for the Indexer that holds the bijection mapping between objects and the indices assigned to each object
 """
 
+import json
+
 class Indexer(object):
 	def __init__(self, filepath=None):
 		self.objs_to_ints = {}
