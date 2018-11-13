@@ -77,6 +77,9 @@ class PlotDataset(Dataset):
 		self.index_answers()
 		self.index_questions()
 
+		self.ans_vocab_size = len(self.ans_indexer)
+		self.ques_vocab_size = len(self.ques_indexer)
+
 		self.img_transform = transforms.Compose([
 			transforms.ToTensor()
 		])
