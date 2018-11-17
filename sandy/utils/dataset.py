@@ -5,6 +5,7 @@ Module that implements uses the PyTorch dataset interface to load the dataset an
 from os import path
 from glob import glob
 import numpy as np
+import skimage
 from skimage import io
 import json
 import nltk
@@ -56,6 +57,11 @@ class PlotDataset(Dataset):
 		with open(path.join(self.meta_data_dir, '{}_metadata_lbl.json'.format(self.split)), 'r') as metadata_file:
 			metadata = json.load(metadata_file)
 
+		if args.small_train:
+			num_ex = 100
+			print ('Using only %d questions'%num_ex)
+			qa_data = qa_data[: num_ex]
+
 		# Create a map of Metadata indexed by image instead of a list
 		self.metadata_dict = {}
 		for mt in metadata:
@@ -80,8 +86,10 @@ class PlotDataset(Dataset):
 		self.ans_vocab_size = len(self.ans_indexer)
 		self.ques_vocab_size = len(self.ques_indexer)
 
+		# Added a normalization transform according to torchvision documentation
 		self.img_transform = transforms.Compose([
-			transforms.ToTensor()
+			transforms.ToTensor(),
+			transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 		])
 
 		if args.debug:
@@ -109,7 +117,7 @@ class PlotDataset(Dataset):
 
 			if self.use_dyn_dict:
 				for bidx in range(max_bboxes):
-					self.ans_indexer.get_index('bbox_%02d'%bidx)
+					self.ques_indexer.get_index('bbox_%02d'%bidx)
 
 			for qid in self.qa_dict:
 
@@ -213,10 +221,11 @@ class PlotDataset(Dataset):
 		# Prevent adding the words to indexer
 		addToIndexer = False
 
-		question_tok = np.zeros((self.max_ques_len), dtype=np.int)
+		question_tok = np.ones((self.max_ques_len), dtype=np.int)*self.ques_indexer.get_index(pad_token, addToIndexer)
 		
 		answer = qas['answer']
 		question_wrds = nltk.word_tokenize(qas['question'])
+		question_len = len(question_wrds)
 		answer_tok = None
 
 		if self.use_dyn_dict:
@@ -227,9 +236,9 @@ class PlotDataset(Dataset):
 				# find the bbox in the metadata
 				for mt in image_metadata['texts']:
 					if qas['answer_bbox'] == mt['bbox']:
-						bidx = mt['bbox']['idx']
-						answer_idx = self.ans_indexer.get_index('bbox_%02d'%bidx)
-						assert answer_idx == -1
+						bidx = mt['idx']
+						answer_idx = self.ans_indexer.get_index('bbox_%02d'%bidx, addToIndexer)
+						assert answer_idx != -1
 
 						answer_tok = np.array([answer_idx], dtype=np.int)
 						break
@@ -254,14 +263,18 @@ class PlotDataset(Dataset):
 
 					if bbox_txt['text'] == wrd:
 						isPresentInBbox = True
-						question_tok[i] = self.ques_indexer.get_index('bbox_%02d'%bidx)
+						bidx = bbox_txt['idx']
+						qidx = self.ques_indexer.get_index('bbox_%02d'%bidx, addToIndexer)
+						assert qidx != -1
+
+						question_tok[i] = qidx
 						break
 
 				if not isPresentInBbox:
-					qidx = self.ques_indexer.get_index(wrd)
+					qidx = self.ques_indexer.get_index(wrd, addToIndexer)
 
 					if qidx == -1:
-						question_tok[i] = self.ques_indexer.get_index(unk_token)
+						question_tok[i] = self.ques_indexer.get_index(unk_token, addToIndexer)
 					else:
 						question_tok[i] = qidx
 		else:
@@ -286,7 +299,7 @@ class PlotDataset(Dataset):
 					question_tok[i] = wrd_idx
 
 
-		return question_tok, answer_tok
+		return question_tok, question_len, answer_tok
 
 	def __len__(self):
 		return len(self.idx2qid)
@@ -302,12 +315,16 @@ class PlotDataset(Dataset):
 		
 		# First, read the image
 		image_name = self.qa_dict[question_id]['image']
-		img = self.img_transform( io.imread(path.join(self.img_dir, image_name)))
+		image_path = path.join(self.img_dir, image_name)
+		rgba_image = io.imread(image_path)
+		rgb_image = skimage.color.rgba2rgb(rgba_image)
+		img = self.img_transform(rgb_image)
 
-		question_tok, answer_tok = self.tokenize(self.qa_dict[question_id])
+		question_tok, question_len, answer_tok = self.tokenize(self.qa_dict[question_id])
 
 		return {
 			'image': img,
 			'ques': torch.as_tensor(question_tok, dtype=torch.long),
+			'ques_len': question_len,
 			'ans': torch.as_tensor(answer_tok, dtype=torch.long)
 		}
