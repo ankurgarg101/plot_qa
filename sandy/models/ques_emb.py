@@ -16,9 +16,10 @@ class QuestionEmbedding(nn.Module):
         self.tanh = nn.Tanh()
         self.lstm_dropout = nn.Dropout(lstm_dropout)
 
+        # Using a unidirectional LSTM
         self.lstm = nn.LSTM(input_size=emb_size, hidden_size=hidden_size,
                 num_layers=num_layers, bias=True,
-                batch_first=True, dropout=lstm_dropout,bidirectional=True)
+                batch_first=True, dropout=lstm_dropout,bidirectional=False)
 
     def forward(self, ques_vectors, ques_lengths):            # forward(self, ques_vec, ques_len) | ques_vec: [batch_size, 26]
         # batch_size, pad_len = ques_vectors.size()

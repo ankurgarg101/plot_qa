@@ -41,6 +41,7 @@ def main(args):
 
     # Construct NN models
     vocab_size = train_dataset.ques_vocab_size
+    output_size = train_dataset.ans_vocab_size
 
     question_model = QuestionEmbedding(vocab_size, params['emb_size'],
                                        params['hidden_size'], params['rnn_size'],
@@ -50,8 +51,7 @@ def main(args):
     image_model = ImageEmbedding(params['hidden_size'], params['feature_type'])
 
     attention_model = SAN(params['hidden_size'], params['att_size'],
-                                params['img_seq_size'], params['output_size'],
-                                params['dropout'])
+                                params['img_seq_size'], output_size)
 
     if params['use_gpu'] and torch.cuda.is_available():
         question_model.cuda()

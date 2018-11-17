@@ -8,69 +8,61 @@ import torch
 import torch.nn as nn
 
 class SAN(nn.Module):
-    def __init__(self, input_size, att_size, img_seq_size, output_size, drop_ratio):
+    def __init__(self, input_size, att_size, img_seq_size, output_size):
         
         super(SAN, self).__init__()
         
+        # d = input_size | m = img_seq_size | k = att_size
         self.input_size = input_size
         self.att_size = att_size
         self.img_seq_size = img_seq_size
         self.output_size = output_size
-        self.drop_ratio = drop_ratio
 
         # Specify the non-linearities
-        self.tan = nn.Tanh()
-        self.dp = nn.Dropout(drop_ratio)
-        self.sf = nn.Softmax()
+        self.tanh = nn.Tanh()
+        self.softmax = nn.Softmax(dim=1)
 
-        self.fc11 = nn.Linear(input_size, 768, bias=True)
-        self.fc111 = nn.Linear(768, 640, bias=True)
-        self.fc12 = nn.Linear(input_size, 768, bias=False)
-        self.fc121 = nn.Linear(768, 640, bias=False)
-        self.linear_second = nn.Linear(640, att_size, bias=False)
-        self.fc13 = nn.Linear(att_size, 1, bias=True)
+        # Stack 1 layers
+        self.W_qa_1 = nn.Linear(input_size, att_size)
+        self.W_ia_1 = nn.Linear(input_size, att_size, bias=False)
+        self.W_p_1 = nn.Linear(att_size, 1)
 
-        self.fc21 = nn.Linear(input_size, att_size, bias=True)
-        self.fc22 = nn.Linear(input_size, att_size, bias=False)
-        self.fc23 = nn.Linear(att_size, 1, bias=True)
+        # Stack 2 layers
+        self.W_qa_2 = nn.Linear(input_size, att_size)
+        self.W_ia_2 = nn.Linear(input_size, att_size, bias=False)
+        self.W_p_2 = nn.Linear(att_size, 1)
 
-        self.fc = nn.Linear(input_size, output_size, bias=True)
+        # Final fc layer
+        self.W_u = nn.Linear(input_size, output_size)
 
-        # d = input_size | m = img_seq_size | k = att_size
-    def forward(self, ques_feat, img_feat):  # ques_feat -- [batch, d] | img_feat -- [batch_size, m, d]
-        #  print(img_feat.size(), ques_feat.size())
-        B = ques_feat.size(0)
+    def forward(self, ques_feats, img_feats):  # ques_feats -- [batch, d] | img_feats -- [batch_size, 14, 14, d]
+        batch_size = ques_feats.size(0)
+
+        img_feats = img_feats.view(batch_size, self.img_seq_size, -1)
 
         # Stack 1
-        
-        ques_emb_1 = self.fc11(ques_feat) 
-        ques_emb_1 = self.fc111(ques_emb_1) # [batch_size, att_size]
-        img_emb_1 = self.fc12(img_feat)
-        img_emb_1 = self.fc121(img_emb_1)
+        ques_emb_1 = self.W_qa_1(ques_feats) 
+        img_emb_1 = self.W_ia_1(img_feats)
 
-        h1 = self.tan(ques_emb_1.view(B, 1, self.att_size) + img_emb_1)
-        h1_emb = self.linear_second(h1) 
-        
-        p1 = self.sf(h1_emb.view(-1, self.img_seq_size)).view(B, 1, self.img_seq_size)
+        h1_emb = self.W_p_1(img_emb_1 + ques_emb_1.unsqueeze(1)).squeeze(2)
+        p1 = self.softmax(h1_emb)
 
         # Weighted sum
-        img_att1 = p1.matmul(img_feat)
-        u1 = ques_feat + img_att1.view(-1, self.input_size)
+        img_att1 = torch.bmm(p1.unsqueeze(1), img_feats).squeeze(1)
+        u1 = ques_feats + img_att1
 
         # Stack 2
-        ques_emb_2 = self.fc21(u1)  # [batch_size, att_size]
-        img_emb_2 = self.fc22(img_feat)
+        ques_emb_2 = self.W_qa_2(u1)
+        img_emb_2 = self.W_ia_2(img_feats)
 
-        h2 = self.tan(ques_emb_2.view(B, 1, self.att_size) + img_emb_2)
-
-        h2_emb = self.fc23(self.dp(h2))
-        p2 = self.sf(h2_emb.view(-1, self.img_seq_size)).view(B, 1, self.img_seq_size)
+        h2_emb = self.W_p_2(img_emb_2 + ques_emb_2.unsqueeze(1)).squeeze(2)
+        p2 = self.softmax(h2_emb)
 
         # Weighted sum
-        img_att2 = p2.matmul(img_feat)
-        u2 = u1 + img_att2.view(-1, self.input_size)
+        img_att2 = torch.bmm(p2.unsqueeze(1), img_feats).squeeze(1)
+        u2 = u1 + img_att2
 
-        # score
-        score = self.fc(u2)
+        # Final softmax outputs
+        scores = self.softmax(self.W_u(u2))
 
-        return score
+        return scores
