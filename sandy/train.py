@@ -101,6 +101,13 @@ def main(args):
     all_loss_store = []
     loss_store = []
     lr_cur = params['learning_rate']
+
+    # Call train() on all models for training
+    question_model.train()
+    image_model.train()
+    attention_model.train()
+
+    # Train loop
     for epoch in range(params['resume_from_epoch'], params['epochs']+1):
 
         if epoch > params['learning_rate_decay_start']:
@@ -121,6 +128,7 @@ def main(args):
             questions = questions[sort_idxes, :]
             ques_lens = ques_lens[sort_idxes]
             answers = answers[sort_idxes, :]
+            answers = answers.squeeze(1)
             
             # print (images)
             # print (questions)
@@ -138,17 +146,17 @@ def main(args):
             output = attention_model.forward(ques_emb, img_emb)
 
             loss = criterion(output, answers)
-            #  print('i: %d | LOSS: %.4f | lr: %f'%(i, loss.data[0], lr_cur))
-            all_loss_store += [loss.data[0]]
+            
+            all_loss_store += [loss.item()]
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.data[0]
+            running_loss += loss.item()
 
             if not (i+1) % params['losses_log_every']:
                 print('Epoch [%d/%d], Step [%d/%d], Loss: %.4f' % (
                     epoch, params['epochs'], i+1,
-                    train_dataset.__len__()//params['batch_size'], loss.data[0]
+                    train_dataset.__len__()//params['batch_size'], loss.item()
                     ))
 
         print("Saving models")
@@ -158,6 +166,7 @@ def main(args):
         torch.save(image_model.state_dict(), os.path.join(model_dir, 'image_model.pkl'))
         torch.save(attention_model.state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
         loss_store += [running_loss]
+        print('Epoch %d | Loss: %.4f | lr: %f'%(epoch, running_loss, lr_cur))
 
         # torch.save(question_model.state_dict(), 'question_model'+str(epoch)+'.pkl')
     print("Saving all losses to file")
