@@ -26,6 +26,10 @@ def adjust_learning_rate(optimizer, epoch, lr, learning_rate_decay_every):
         param_group['lr'] = lr_tmp
     return lr_tmp
 
+def cycle(seq):
+    while True:
+        for elem in seq:
+            yield elem
 
 def main(args):
     
@@ -33,11 +37,12 @@ def main(args):
 
     # Construct Data loader
     
-    train_dataset = PlotDataset(args)
+    train_dataset = PlotDataset(args, 'train')
+    val_dataset = PlotDataset(args, 'val_easy')
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=params['batch_size'],
-                                               shuffle=True)
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True,num_workers=4)
+
+    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'], num_workers=4)
 
     # Construct NN models
     vocab_size = train_dataset.ques_vocab_size
@@ -54,6 +59,7 @@ def main(args):
                                 params['img_seq_size'], output_size)
 
     if params['use_gpu'] and torch.cuda.is_available():
+        print('Initialized Cuda Models')
         question_model.cuda()
         image_model.cuda()
         attention_model.cuda()
@@ -159,9 +165,49 @@ def main(args):
                     train_dataset.__len__()//params['batch_size'], loss.item()
                     ))
 
+        accuracies = []
+        
+        if params['use_gpu'] and torch.cuda.is_available():
+            pred = lambda x: np.argmax(x.cpu().detach().numpy(), axis=1)
+        else:    
+            pred = lambda x: np.argmax(x.detach().numpy(), axis=1)
+
+
+        for i, batch in enumerate(val_loader):
+            images = batch['image']
+            questions = batch['ques']
+            ques_lens = batch['ques_len']
+            answers = batch['ans']
+
+            # Sort the examples in reverse order of sentence length
+            _, sort_idxes = torch.sort(ques_lens, descending=True)
+            images = images[sort_idxes, :, :, :]
+            questions = questions[sort_idxes, :]
+            ques_lens = ques_lens[sort_idxes]
+            answers = answers[sort_idxes, :]
+            answers = answers.squeeze(1)
+            
+            # print (images)
+            # print (questions)
+            # print (ques_lens)
+            # print (answers)
+
+            if (params['use_gpu'] and torch.cuda.is_available()):
+                images = images.cuda()
+                questions = questions.cuda()
+
+            img_emb = image_model.forward(images)
+            ques_emb = question_model.forward(questions, ques_lens)
+            output = attention_model.forward(ques_emb, img_emb)
+
+            output_preds = pred(output)
+            accuracies.extend( output_preds ==  answers.detach().numpy())
+
+        print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))        
+
         print("Saving models")
         model_dir = os.path.join(params['checkpoint_path'], str(epoch))
-        os.mkdir(model_dir)
+        os.makedirs(model_dir)
         torch.save(question_model.state_dict(), os.path.join(model_dir, 'question_model.pkl'))
         torch.save(image_model.state_dict(), os.path.join(model_dir, 'image_model.pkl'))
         torch.save(attention_model.state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
@@ -192,7 +238,7 @@ def fetch_args(parser):
     parser.add_argument('--hidden_size', default=1024, type=int, help='the hidden layer size of the model')
     parser.add_argument('--rnn_size', default=1024, type=int, help='size of the rnn in number of hidden nodes in each layer')
     parser.add_argument('--att_size', default=512, type=int, help='size of attention vector which refer to k in paper')
-    parser.add_argument('--batch_size', default=2, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
+    parser.add_argument('--batch_size', default=8, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
     parser.add_argument('--output_size', default=1000, type=int, help='number of output answers')
     parser.add_argument('--rnn_layers', default=2, type=int, help='number of the rnn layer')
     parser.add_argument('--img_seq_size', default=196, type=int, help='number of feature regions in image')
@@ -222,12 +268,13 @@ def fetch_args(parser):
     parser.add_argument('--use_gpu', default=1, type=int, help='to use gpu or not to use, that is the question')
     parser.add_argument('--id', default='1', help='an id identifying this run/job. used in cross-val and appended when writing progress files')
     parser.add_argument('--backend', default='cudnn', help='nn|cudnn')
-    parser.add_argument('--gpuid', default=2, type=int, help='which gpu to use. -1 = use CPU')
+    parser.add_argument('--gpuid', default=-1, type=int, help='which gpu to use. -1 = use CPU')
     parser.add_argument('--seed', default=1234, type=int, help='random number generator seed to use')
     parser.add_argument('--print_params', default=1, type=int, help='pass 0 to turn off printing input parameters')
 
     args = parser.parse_args()
     params = vars(args)                     # convert to ordinary dict
+    
     if params['print_params']:
         print('parsed input parameters:')
         print (json.dumps(params, indent = 2))

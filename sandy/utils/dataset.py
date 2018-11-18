@@ -24,7 +24,7 @@ class PlotDataset(Dataset):
 	Dataset class that loads the DVQA dataset
 	"""
 
-	def __init__(self, args):
+	def __init__(self, args, split):
 
 		super(PlotDataset, self).__init__()
 
@@ -33,7 +33,7 @@ class PlotDataset(Dataset):
 		self.meta_data_dir = path.join(self.data_dir, 'metadata')
 		self.qa_dir = path.join(self.data_dir, 'qa')
 
-		self.split = args.split
+		self.split = split
 		self.use_dyn_dict = args.use_dyn_dict
 		self.args = args
 

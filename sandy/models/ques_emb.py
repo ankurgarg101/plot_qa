@@ -66,6 +66,10 @@ class QuestionEmbedding(nn.Module):
         # Choose the output at ques_length-1 index for all examples in the batch
         x = torch.LongTensor(ques_lengths - 1).unsqueeze(1)
         mask = torch.zeros(batch_size, padded_len).scatter_(1, x, 1).unsqueeze(1)
+
+        if self.use_gpu:
+            mask = mask.cuda()
+        
         final_output = torch.bmm(mask, unpacked_output).squeeze(1)
 
         return final_output
