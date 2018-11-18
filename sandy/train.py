@@ -31,18 +31,44 @@ def cycle(seq):
         for elem in seq:
             yield elem
 
+def check_restart_conditions(params):
+
+    # Check for the status file corresponding to the model
+    status_file = os.path.join(params['checkpoint_path'], 'status.json')
+    if os.path.exists(status_file):
+
+        with open(status_file, 'r') as f:
+            status = json.load(f)
+
+        params['resume_from_epoch'] = status['epoch']
+
+        return params
+
+    return params
+
+def write_status(params, epoch):
+
+    status_file = os.path.join(params['checkpoint_path'], 'status.json')
+    status = {
+        'epoch': epoch,
+    }
+
+    with open(status_file, 'w') as f:
+        json.dump(status, f, indent=4)
+
 def main(args):
     
     params = vars(args)
+
+    #params = check_restart_conditions(params)
 
     # Construct Data loader
     
     train_dataset = PlotDataset(args, 'train')
     val_dataset = PlotDataset(args, 'val_easy')
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True,num_workers=4)
-
-    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'], num_workers=4)
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True)
+    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'])
 
     # Construct NN models
     vocab_size = train_dataset.ques_vocab_size
@@ -64,8 +90,9 @@ def main(args):
         image_model.cuda()
         attention_model.cuda()
 
-    if params['resume_from_epoch'] > 1:
-        load_model_dir = os.path.join(params['checkpoint_path'], str(params['resume_from_epoch']-1))
+    if params['resume_from_epoch'] >= 1:
+        #load_model_dir = os.path.join(params['checkpoint_path'], str(params['resume_from_epoch']-1))
+        load_model_dir = os.path.join(params['checkpoint_path'])
         print('Loading model files from folder: %s' % load_model_dir)
         question_model.load_state_dict(torch.load(
             os.path.join(load_model_dir, 'question_model.pkl')))
@@ -206,11 +233,15 @@ def main(args):
         print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))        
 
         print("Saving models")
-        model_dir = os.path.join(params['checkpoint_path'], str(epoch))
-        os.makedirs(model_dir)
+        model_dir = os.path.join(params['checkpoint_path'])
+        
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+        
         torch.save(question_model.state_dict(), os.path.join(model_dir, 'question_model.pkl'))
         torch.save(image_model.state_dict(), os.path.join(model_dir, 'image_model.pkl'))
         torch.save(attention_model.state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
+        write_status(params, epoch)
         loss_store += [running_loss]
         print('Epoch %d | Loss: %.4f | lr: %f'%(epoch, running_loss, lr_cur))
 
@@ -226,14 +257,14 @@ def fetch_args(parser):
     parser.add_argument('--split', type=str, default='train', help="The dataset split we want to work with for training the model")
     parser.add_argument('--san', dest='use_dyn_dict', default=True, action="store_false", help="To train original SAN model, turn off the use of dynamic dictionary")
     parser.add_argument('--idx_dir', default='gen/')
-    parser.add_argument('--resume_from_epoch', type=int, dest='resume_from_epoch', default=1, help='Resume from which epoch')
+    parser.add_argument('--resume_from_epoch', type=int, dest='resume_from_epoch', default=0, help='Resume from which epoch')
     parser.add_argument('--small_train', dest='small_train', default=False, action='store_true', help='For training on a small training set')
 
     # TODO: To support resuming from previous checkpoint
     # parser.add_argument('--warm-restart', )
 
     # Options
-    parser.add_argument('--feature_type', default='VGG16', help='VGG16 or Resnet152')
+    parser.add_argument('--feature_type', default='Resnet152', help='VGG16 or Resnet152')
     parser.add_argument('--emb_size', default=300, type=int, help='the size after embedding from onehot')
     parser.add_argument('--hidden_size', default=1024, type=int, help='the hidden layer size of the model')
     parser.add_argument('--rnn_size', default=1024, type=int, help='size of the rnn in number of hidden nodes in each layer')
@@ -243,7 +274,7 @@ def fetch_args(parser):
     parser.add_argument('--rnn_layers', default=2, type=int, help='number of the rnn layer')
     parser.add_argument('--img_seq_size', default=196, type=int, help='number of feature regions in image')
     parser.add_argument('--dropout', default=0.5, type=float, help='dropout ratio in network')
-    parser.add_argument('--epochs', default=10, type=int, help='Number of epochs to run')
+    parser.add_argument('--epochs', default=2, type=int, help='Number of epochs to run')
 
     # Optimization
     parser.add_argument('--optim', default='rmsprop', help='what update to use? rmsprop|sgd|sgdmom|adagrad|adam')
