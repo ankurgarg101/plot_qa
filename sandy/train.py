@@ -36,14 +36,11 @@ def check_restart_conditions(params):
     # Check for the status file corresponding to the model
     status_file = os.path.join(params['checkpoint_path'], 'status.json')
     if os.path.exists(status_file):
-
         with open(status_file, 'r') as f:
             status = json.load(f)
-
         params['resume_from_epoch'] = status['epoch']
-
-        return params
-
+    else:
+        params['resume_from_epoch'] = 0
     return params
 
 def write_status(params, epoch):
@@ -60,7 +57,7 @@ def main(args):
     
     params = vars(args)
 
-    #params = check_restart_conditions(params)
+    params = check_restart_conditions(params)
 
     # Construct Data loader
     
@@ -91,6 +88,7 @@ def main(args):
         attention_model.cuda()
 
     if params['resume_from_epoch'] >= 1:
+        print('Loading Old model')
         #load_model_dir = os.path.join(params['checkpoint_path'], str(params['resume_from_epoch']-1))
         load_model_dir = os.path.join(params['checkpoint_path'])
         print('Loading model files from folder: %s' % load_model_dir)
