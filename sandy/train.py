@@ -131,6 +131,9 @@ def main(args):
     # Start training
     all_loss_store = []
     loss_store = []
+    val_acc_store = []
+    val_loss_store = []
+
     lr_cur = params['learning_rate']
 
     # Call train() on all models for training
@@ -197,7 +200,7 @@ def main(args):
         else:    
             pred = lambda x: np.argmax(x.detach().numpy(), axis=1)
 
-
+        running_val_loss = 0.0
         for i, batch in enumerate(val_loader):
             images = batch['image']
             questions = batch['ques']
@@ -220,13 +223,22 @@ def main(args):
             if (params['use_gpu'] and torch.cuda.is_available()):
                 images = images.cuda()
                 questions = questions.cuda()
+                answers = answers.cuda()
 
             img_emb = image_model.forward(images)
             ques_emb = question_model.forward(questions, ques_lens)
             output = attention_model.forward(ques_emb, img_emb)
+            val_loss = criterion(output, answers)
+            running_val_loss += val_loss.item()
+
+            if (params['use_gpu'] and torch.cuda.is_available()):
+                answers = answers.cpu()
 
             output_preds = pred(output)
             accuracies.extend( output_preds ==  answers.detach().numpy())
+
+        val_loss_store += [running_val_loss]
+        val_acc_store += [np.mean(accuracies)]
 
         print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))        
 
@@ -244,9 +256,12 @@ def main(args):
         print('Epoch %d | Loss: %.4f | lr: %f'%(epoch, running_loss, lr_cur))
 
         # torch.save(question_model.state_dict(), 'question_model'+str(epoch)+'.pkl')
-    print("Saving all losses to file")
-    np.savetxt(os.path.join(params['checkpoint_path'], 'all_loss_store.txt'), np.array(all_loss_store), fmt='%f')
-    print(loss_store)
+        print("Saving all losses to file")
+        np.savetxt(os.path.join(params['checkpoint_path'], 'all_loss_store.txt'), np.array(all_loss_store), fmt='%f')
+        np.savetxt(os.path.join(params['checkpoint_path'], 'loss_store.txt'), np.array(loss_store), fmt='%f')
+        np.savetxt(os.path.join(params['checkpoint_path'], 'val_loss_store.txt'), np.array(val_loss_store), fmt='%f')
+        np.savetxt(os.path.join(params['checkpoint_path'], 'val_acc_store.txt'), np.array(val_acc_store), fmt='%f')
+        print(loss_store)
 
 def fetch_args(parser):
 
