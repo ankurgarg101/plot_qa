@@ -282,7 +282,7 @@ def fetch_args(parser):
     parser.add_argument('--hidden_size', default=1024, type=int, help='the hidden layer size of the model')
     parser.add_argument('--rnn_size', default=1024, type=int, help='size of the rnn in number of hidden nodes in each layer')
     parser.add_argument('--att_size', default=512, type=int, help='size of attention vector which refer to k in paper')
-    parser.add_argument('--batch_size', default=8, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
+    parser.add_argument('--batch_size', default=16, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
     parser.add_argument('--output_size', default=1000, type=int, help='number of output answers')
     parser.add_argument('--rnn_layers', default=2, type=int, help='number of the rnn layer')
     parser.add_argument('--img_seq_size', default=196, type=int, help='number of feature regions in image')
@@ -290,8 +290,8 @@ def fetch_args(parser):
     parser.add_argument('--epochs', default=2, type=int, help='Number of epochs to run')
 
     # Optimization
-    parser.add_argument('--optim', default='rmsprop', help='what update to use? rmsprop|sgd|sgdmom|adagrad|adam')
-    parser.add_argument('--learning_rate', default=4e-4, type=float, help='learning rate')
+    parser.add_argument('--optim', default='adam', help='what update to use? rmsprop|sgd|sgdmom|adagrad|adam')
+    parser.add_argument('--learning_rate', default=1e-3, type=float, help='learning rate')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
     parser.add_argument('--learning_rate_decay_start', default=10, type=int, help='at what epoch to start decaying learning rate?')
     parser.add_argument('--learning_rate_decay_every', default=10, type=int, help='every how many epoch thereafter to drop LR by 0.1?')
