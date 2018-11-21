@@ -8,7 +8,6 @@ import numpy as np
 import skimage
 from skimage import io
 import json
-import nltk
 import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
@@ -51,7 +50,7 @@ class PlotDataset(Dataset):
 		# Read the data corresponding to self.split
 		#self.img_filenames = glob(path.join(self.img_dir, 'bar_{}_*-img.png'.format(self.split)))
 
-		with open(path.join(self.qa_dir, '{}_qa.json'.format(self.split)), 'r') as qa_file:
+		with open(path.join(self.qa_dir, '{}_qa_tok.json'.format(self.split)), 'r') as qa_file:
 			qa_data = json.load(qa_file)
 
 		with open(path.join(self.meta_data_dir, '{}_metadata_lbl.json'.format(self.split)), 'r') as metadata_file:
@@ -122,7 +121,7 @@ class PlotDataset(Dataset):
 			for qid in self.qa_dict:
 
 				qa = self.qa_dict[qid]
-				question_wrds = nltk.word_tokenize( qa['question'] )
+				question_wrds = qa['question_tok']
 
 				self.max_ques_len = max(self.max_ques_len, len(question_wrds))
 
@@ -165,7 +164,7 @@ class PlotDataset(Dataset):
 
 			# Compute the self.max_ques_len
 
-			self.max_ques_len = max( [ len(nltk.word_tokenize(qas['question'])) for qas in self.qa_dict.values() ] )
+			self.max_ques_len = max( [ len(qas['question_tok']) for qas in self.qa_dict.values() ] )
 
 
 	def index_answers(self):
@@ -224,7 +223,7 @@ class PlotDataset(Dataset):
 		question_tok = np.ones((self.max_ques_len), dtype=np.int)*self.ques_indexer.get_index(pad_token, addToIndexer)
 		
 		answer = qas['answer']
-		question_wrds = nltk.word_tokenize(qas['question'])
+		question_wrds = qas['question_tok']
 		question_len = len(question_wrds)
 		answer_tok = None
 

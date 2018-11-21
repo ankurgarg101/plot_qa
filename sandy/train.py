@@ -64,8 +64,8 @@ def main(args):
     train_dataset = PlotDataset(args, 'train')
     val_dataset = PlotDataset(args, 'val_easy')
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True)
-    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'])
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True, num_workers=8)
+    val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'], num_workers=8)
 
     # Construct NN models
     vocab_size = train_dataset.ques_vocab_size
