@@ -26,19 +26,19 @@ class ImageEmbedding(nn.Module):
         for param in self.features.parameters():
             param.requires_grad = False
 
-        self.hidden_size = hidden_size
-        self.linear = nn.Linear(self.img_features, self.hidden_size)
-        self.tanh = nn.Tanh()
+        # self.hidden_size = hidden_size
+        # self.linear = nn.Linear(self.img_features, self.hidden_size)
+        # self.tanh = nn.Tanh()
 
     def forward(self, images):
         images = images.float()
         image_feats = self.features(images)
 
-        image_feats = image_feats.permute(0, 2, 3, 1)
-        image_feats_final = self.tanh(self.linear(image_feats))
+        # image_feats = image_feats.permute(0, 2, 3, 1)
+        # image_feats_final = self.tanh(self.linear(image_feats))
 
         # input: [batch_size, 512, 14, 14]
 
         # intermed = self.linear(input.view(-1,self.img_features)).view(
         #                             -1, 196, self.hidden_size)
-        return image_feats_final
+        return image_feats

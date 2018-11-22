@@ -1,3 +1,4 @@
+
 def concat_bbox(text_feature,bbox):
 	#bbox: torch Tensor of size batch x max_num_text x 4
 	#text_feature: torch Tensor of size batch x max_num_text x feature_size
