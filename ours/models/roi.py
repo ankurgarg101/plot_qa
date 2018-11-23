@@ -8,8 +8,10 @@ from roi_align.roi_align import RoIAlign
 
 class RoIFeats(nn.Module):
 
-	def __init__(self, crop_dim=7, max_bboxes):
-
+	def __init__(self, crop_dim, max_bboxes):
+		
+		super(RoIFeats, self).__init__()
+		
 		# Check if scale ratio needs to be given as input here or the coordinates should be modified from outside itself.
 
 		# We'll do a square crop of the image features for each bounding box

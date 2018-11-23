@@ -36,7 +36,6 @@ def build_models(params, extra_params):
 		text_model = TextEmbedding(extra_params['text_vocab_size'], params['txt_emb_size'], extra_params['max_num_text'])
 		models.append(text_model)
 
-
-	print len(models)
+	print(len(models))
 	print(models)
 	return models

@@ -1,9 +1,10 @@
 """
 Main module that performs the training and evaluation process
 """
-
+import argparse
 from utils.dataset import PlotDataset
 from models import build_models
+import json
 
 def fetch_args(parser):
 
@@ -14,6 +15,8 @@ def fetch_args(parser):
     parser.add_argument('--idx_dir', default='gen/')
     parser.add_argument('--resume_from_epoch', type=int, dest='resume_from_epoch', default=0, help='Resume from which epoch')
     parser.add_argument('--small_train', dest='small_train', default=False, action='store_true', help='For training on a small training set')
+
+    parser.add_argument('--pct', default=1, type=int, help="Percentage of data to be used")
 
     # TODO: To support resuming from previous checkpoint
     # parser.add_argument('--warm-restart', )
@@ -90,8 +93,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     params = fetch_args(parser)
 
-    train_dataset = PlotDataset(params, 'train')
     val_dataset = PlotDataset(params, 'val_easy')
+    train_dataset = PlotDataset(params, 'train')
+    
 
     extra_params = get_extra_params(train_dataset)
 

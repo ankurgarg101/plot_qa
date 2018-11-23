@@ -41,7 +41,6 @@ def write_status(params, epoch):
 	with open(status_file, 'w') as f:
 		json.dump(status, f, indent=4)
 
-
 def load_models(models, params, load_model_dir):
 
 	models[0].load_state_dict(torch.load(
@@ -134,6 +133,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 		print('Epoch: %d | lr: %f' % (epoch, lr_cur))
 
 		running_loss = 0.0
+		
 		for i, batch in enumerate(train_loader):
 			
 			images = batch['image']
