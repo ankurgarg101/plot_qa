@@ -12,7 +12,7 @@ class TextEmbedding(nn.Module):
 		if pretrained_matrix is not None:
 			self.embed = nn.Embedding.from_pretrained(pretrained_matrix)
 		else:
-			self.embed = nn.Embedding(vocab_size,embedding_size)
+			self.embed = nn.Embedding(vocab_size,embedding_size,padding_idx=0)
 
 		def forward(self, index):
 			"""
