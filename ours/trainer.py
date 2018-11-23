@@ -68,8 +68,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 	params = check_restart_conditions(params)
 	
 	# Construct Data loader
-	train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True, num_workers=1)
-	val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'], num_workers=1)
+	train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True, num_workers=8)
+	val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'], num_workers=8)
 
 	if params['use_gpu'] and torch.cuda.is_available():
 		print('Initialized Cuda Models')
@@ -140,6 +140,13 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			questions = batch['ques']
 			ques_lens = batch['ques_len']
 			answers = batch['ans']
+			bar_lens = batch['bar_len']
+			text_lens = batch['text_len']
+			bar_bboxes = batch['bar_bboxes']
+			text_bboxes = batch['text_bboxes']
+			text_vals = batch['text_vals']
+			text_types = batch['text_types']
+
 
 			# Sort the examples in reverse order of sentence length
 			_, sort_idxes = torch.sort(ques_lens, descending=True)
@@ -148,6 +155,12 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			ques_lens = ques_lens[sort_idxes]
 			answers = answers[sort_idxes, :]
 			answers = answers.squeeze(1)
+			bar_lens = bar_lens[sort_idxes]
+			text_lens = text_lens[sort_idxes]
+			bar_bboxes = bar_bboxes[sort_idxes]
+			text_bboxes = text_bboxes[sort_idxes]
+			text_vals = text_vals[sort_idxes]
+			text_types = text_types[sort_idxes]
 			
 			# print (images)
 			# print (questions)
@@ -158,11 +171,50 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				images = images.cuda()
 				questions = questions.cuda()
 				answers = answers.cuda()
+				bar_lens = bar_lens.cuda()
+				text_lens = text_lens.cuda()
+				bar_bboxes = bar_bboxes.cuda()
+				text_bboxes = text_bboxes.cuda()
+				text_vals = text_vals.cuda()
+				text_types = text_types.cuda()
 
 			optimizer.zero_grad()
-			img_emb = image_model.forward(images)
-			ques_emb = question_model.forward(questions, ques_lens)
-			output = attention_model.forward(ques_emb, img_emb)
+			
+			ques_emb = models[0].forward(questions, ques_lens)
+			
+			if params['load_roi']:
+				raise('Loading Not done')
+			else:
+				img_emb = models[2].forward(images)
+
+				if params['use_roi']:
+
+					box_idx = torch.as_tensor(np.repeat(range(len(images)), extra_params['max_num_bars']), dtype=torch.long)
+					if (params['use_gpu'] and torch.cuda.is_available()):
+						box_idx = box_idx.cuda()
+
+					img_emb = models[3].forward(img_emb, bar_bboxes, box_idx )
+				else:
+					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
+
+			if params['use_text']:
+				text_emb = models[4].forward(text_vals)
+				text_emb = torch.cat((text_emb, text_types), dim=2)
+			else:
+				text_emb = None
+
+			if params['use_pos']:
+
+				if params['use_text']:
+					text_emb = torch.cat((text_emb, text_b), dim=2)
+
+				if params['use_roi']:
+					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
+			
+			if params['use_roi'] or params['load_roi']:
+				output = models[1].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens)
+			else:
+				output = models[1].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens)
 
 			loss = criterion(output, answers)
 			
@@ -179,7 +231,10 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					))
 
 		accuracies = []
-		
+		# Call train() on all models for training
+		for m in models:
+			m.eval()
+			
 		if params['use_gpu'] and torch.cuda.is_available():
 			pred = lambda x: np.argmax(x.cpu().detach().numpy(), axis=1)
 		else:    
@@ -187,10 +242,17 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 		running_val_loss = 0.0
 		for i, batch in enumerate(val_loader):
+
 			images = batch['image']
 			questions = batch['ques']
 			ques_lens = batch['ques_len']
 			answers = batch['ans']
+			bar_lens = batch['bar_len']
+			text_lens = batch['text_len']
+			bar_bboxes = batch['bar_bboxes']
+			text_bboxes = batch['text_bboxes']
+			text_vals = batch['text_vals']
+			text_types = batch['text_types']
 
 			# Sort the examples in reverse order of sentence length
 			_, sort_idxes = torch.sort(ques_lens, descending=True)
@@ -199,6 +261,12 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			ques_lens = ques_lens[sort_idxes]
 			answers = answers[sort_idxes, :]
 			answers = answers.squeeze(1)
+			bar_lens = bar_lens[sort_idxes]
+			text_lens = text_lens[sort_idxes]
+			bar_bboxes = bar_bboxes[sort_idxes]
+			text_bboxes = text_bboxes[sort_idxes]
+			text_vals = text_vals[sort_idxes]
+			text_types = text_types[sort_idxes]
 			
 			# print (images)
 			# print (questions)
@@ -209,12 +277,48 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				images = images.cuda()
 				questions = questions.cuda()
 				answers = answers.cuda()
+				bar_lens = bar_lens.cuda()
+				text_lens = text_lens.cuda()
+				bar_bboxes = bar_bboxes.cuda()
+				text_bboxes = text_bboxes.cuda()
+				text_vals = text_vals.cuda()
+				text_types = text_types.cuda()
 
-			img_emb = image_model.forward(images)
-			ques_emb = question_model.forward(questions, ques_lens)
-			output = attention_model.forward(ques_emb, img_emb)
-			val_loss = criterion(output, answers)
-			running_val_loss += val_loss.item()
+			ques_emb = models[0].forward(questions, ques_lens)
+			
+			if params['load_roi']:
+				raise('Loading Not done')
+			else:
+				img_emb = models[2].forward(images)
+
+				if params['use_roi']:
+
+					box_idx = torch.as_tensor(np.repeat(range(len(images)), extra_params['max_num_bars']), dtype=torch.long)
+					if (params['use_gpu'] and torch.cuda.is_available()):
+						box_idx = box_idx.cuda()
+
+					img_emb = models[3].forward(img_emb, bar_bboxes, box_idx )
+				else:
+					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
+
+			if params['use_text']:
+				text_emb = models[4].forward(text_vals)
+				text_emb = torch.cat((text_emb, text_types), dim=2)
+			else:
+				text_emb = None
+
+			if params['use_pos']:
+
+				if params['use_text']:
+					text_emb = torch.cat((text_emb, text_b), dim=2)
+
+				if params['use_roi']:
+					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
+			
+			if params['use_roi'] or params['load_roi']:
+				output = models[1].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens)
+			else:
+				output = models[1].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens)
 
 			if (params['use_gpu'] and torch.cuda.is_available()):
 				answers = answers.cpu()

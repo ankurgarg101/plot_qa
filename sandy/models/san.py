@@ -63,6 +63,6 @@ class SAN(nn.Module):
         u2 = u1 + img_att2
 
         # Final softmax outputs
-        scores = self.softmax(self.W_u(u2))
+        scores = self.W_u(u2)
 
         return scores

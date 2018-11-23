@@ -21,4 +21,4 @@ class TextEmbedding(nn.Module):
 
 			index = index.view(-1)
 			
-			return self.embed(index).view(-1, self.max_num_text)
+			return self.embed(index).view(-1, self.max_num_text, self.embedding_size)

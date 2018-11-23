@@ -99,6 +99,7 @@ class PlotDataset(Dataset):
 		self.n_text_types = len(self.text_types)
 		self.org_h = 448
 		self.org_w = 448
+		self.scale_ratio = 448/14
 
 		# Added a normalization transform according to torchvision documentation
 		self.img_transform = transforms.Compose([
@@ -334,10 +335,10 @@ class PlotDataset(Dataset):
 				y1 = (center_y - h/2) / (self.org_h - 1)
 				y2 = (center_y + h/2) / (self.org_h - 1)
 
-				bar_bboxes[bidx][0] = x1
-				bar_bboxes[bidx][1] = y1
-				bar_bboxes[bidx][2] = x2
-				bar_bboxes[bidx][3] = y2
+				bar_bboxes[bidx][0] = x1 / self.scale_ratio
+				bar_bboxes[bidx][1] = y1 / self.scale_ratio
+				bar_bboxes[bidx][2] = x2 / self.scale_ratio
+				bar_bboxes[bidx][3] = y2 / self.scale_ratio
 
 				bidx += 1
 
@@ -357,10 +358,10 @@ class PlotDataset(Dataset):
 			y1 = (center_y - h/2) / (self.org_h - 1)
 			y2 = (center_y + h/2) / (self.org_h - 1)
 
-			text_bboxes[tidx][0] = x1
-			text_bboxes[tidx][1] = y1
-			text_bboxes[tidx][2] = x2
-			text_bboxes[tidx][3] = y2
+			text_bboxes[tidx][0] = x1 / self.scale_ratio
+			text_bboxes[tidx][1] = y1 / self.scale_ratio
+			text_bboxes[tidx][2] = x2 / self.scale_ratio
+			text_bboxes[tidx][3] = y2 / self.scale_ratio
 
 			txt_len = max(txt_len, tidx)
 
