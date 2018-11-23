@@ -23,17 +23,18 @@ def fetch_args(parser):
     # parser.add_argument('--warm-restart', )
 
     # Options
-    parser.add_argument('--feature_type', default='Resnet152', help='VGG16 or Resnet152')
+    parser.add_argument('--feature_type', default='VGG16', help='VGG16 or Resnet152')
     parser.add_argument('--emb_size', default=100, type=int, help='the size after embedding from onehot')
-    parser.add_argument('--hidden_size', default=1024, type=int, help='the hidden layer size of the question embedding model')
+    parser.add_argument('--hidden_size', default=256, type=int, help='the hidden layer size of the question embedding model')
     parser.add_argument('--rnn_size', default=1024, type=int, help='size of the rnn in number of hidden nodes in each layer')
     parser.add_argument('--att_size', default=512, type=int, help='size of attention vector which refer to k in paper')
-    parser.add_argument('--batch_size', default=16, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
+    parser.add_argument('--batch_size', default=4, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
     parser.add_argument('--output_size', default=1000, type=int, help='number of output answers')
-    parser.add_argument('--rnn_layers', default=2, type=int, help='number of the rnn layer')
+    parser.add_argument('--rnn_layers', default=1, type=int, help='number of the rnn layer')
     parser.add_argument('--img_seq_size', default=196, type=int, help='number of feature regions in image')
     parser.add_argument('--dropout', default=0.5, type=float, help='dropout ratio in network')
     parser.add_argument('--epochs', default=2, type=int, help='Number of epochs to run')
+    parser.add_argument('--roi_crop', default=7, type=int, help='Crop Dim Size')
 
     # Optimization
     parser.add_argument('--optim', default='adam', help='what update to use? rmsprop|sgd|sgdmom|adagrad|adam')
@@ -92,9 +93,10 @@ def get_extra_params(train_dataset):
     else:
         extra_params['sfeat_img'] = 2048
     if params['use_pos']:
-        extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types
-    else:
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types + 4
+        extra_params['sfeat_img'] += 4
+    else:
+        extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types
     extra_params['sfeat_ques'] = params['hidden_size']
 
     return extra_params

@@ -399,9 +399,9 @@ class PlotDataset(Dataset):
 			'ques_len': question_len,
 			'ans': torch.as_tensor(answer_tok, dtype=torch.long),
 			'bar_len': bar_len,
-			'txt_len': txt_len,
+			'text_len': txt_len,
 			'bar_bboxes': torch.as_tensor(bar_bboxes, dtype=torch.float),
 			'text_bboxes': torch.as_tensor(text_bboxes, dtype=torch.float),
 			'text_vals': torch.as_tensor(text_vals, dtype=torch.long),
-			'text_types': torch.as_tensor(text_types, dtype=torch.long)
+			'text_types': torch.as_tensor(text_types, dtype=torch.float)
 		}

@@ -41,5 +41,6 @@ def build_models(params, extra_params):
 		models.append(text_model)
 
 	print(len(models))
-	print(type(models[0]))
+	for m in models:
+		print(type(m))
 	return models

@@ -18,7 +18,7 @@ class RoIFeats(nn.Module):
 		self.crop_dim = crop_dim
 		self.max_bboxes = max_bboxes
 
-		self.roi_align = RoIAlign(self.crop_dim, self.crop_dim, tranform_fpcoor=False)
+		self.roi_align = RoIAlign(self.crop_dim, self.crop_dim, transform_fpcoor=False)
 		self.avg_pool = nn.AvgPool2d(self.crop_dim)
 
 	def forward(self, images, boxes, boxes_idx):
@@ -38,10 +38,10 @@ class RoIFeats(nn.Module):
 
 		# Assuming boxes are given in the correct order, just use view. Might need to check
 
-		print("RoI Shape", roi_feats.size())
+		#print("RoI Shape", roi_feats.size())
 
 		pool_out = self.avg_pool(roi_feats)
-		print("Pool Out Shape", pool_out.size())
+		#print("Pool Out Shape", pool_out.size())
 		pool_out = pool_out.view(images.size(0), self.max_bboxes, images.size(1), 1, 1).squeeze()
 
 		return pool_out

@@ -14,11 +14,11 @@ class TextEmbedding(nn.Module):
 		else:
 			self.embed = nn.Embedding(vocab_size,embedding_size,padding_idx=0)
 
-		def forward(self, index):
-			"""
-			index is of shape N, max_num_text
-			"""
+	def forward(self, index):
+		"""
+		index is of shape N, max_num_text
+		"""
 
-			index = index.view(-1)
-			
-			return self.embed(index).view(-1, self.max_num_text, self.embedding_size)
+		index = index.view(-1)
+		
+		return self.embed(index).view(-1, self.max_num_text, self.embedding_size)

@@ -120,13 +120,13 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 	lr_cur = params['learning_rate']
 
-	# Call train() on all models for training
-	for m in models:
-		m.train()
-
 	# Train loop
 	for epoch in range(params['resume_from_epoch'], params['epochs']+1):
 
+		# Call train() on all models for training
+		for m in models:
+			m.train()
+		
 		if epoch > params['learning_rate_decay_start']:
 			lr_cur = adjust_learning_rate(optimizer, epoch - 1 - params['learning_rate_decay_start'] + params['learning_rate_decay_every'],
 										  params['learning_rate'], params['learning_rate_decay_every'])
@@ -189,7 +189,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 				if params['use_roi']:
 
-					box_idx = torch.as_tensor(np.repeat(range(len(images)), extra_params['max_num_bars']), dtype=torch.long)
+					box_idx = torch.as_tensor(np.repeat(range(len(images)), extra_params['max_num_bars']), dtype=torch.int)
 					if (params['use_gpu'] and torch.cuda.is_available()):
 						box_idx = box_idx.cuda()
 
@@ -206,7 +206,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			if params['use_pos']:
 
 				if params['use_text']:
-					text_emb = torch.cat((text_emb, text_b), dim=2)
+					text_emb = torch.cat((text_emb, text_bboxes), dim=2)
 
 				if params['use_roi']:
 					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
@@ -293,7 +293,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 				if params['use_roi']:
 
-					box_idx = torch.as_tensor(np.repeat(range(len(images)), extra_params['max_num_bars']), dtype=torch.long)
+					box_idx = torch.as_tensor(np.repeat(range(len(images)), extra_params['max_num_bars']), dtype=torch.int)
 					if (params['use_gpu'] and torch.cuda.is_available()):
 						box_idx = box_idx.cuda()
 
@@ -310,7 +310,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			if params['use_pos']:
 
 				if params['use_text']:
-					text_emb = torch.cat((text_emb, text_b), dim=2)
+					text_emb = torch.cat((text_emb, text_bboxes), dim=2)
 
 				if params['use_roi']:
 					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
@@ -337,9 +337,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 		if not os.path.exists(model_dir):
 			os.makedirs(model_dir)
 		
-		torch.save(question_model.state_dict(), os.path.join(model_dir, 'question_model.pkl'))
-		torch.save(image_model.state_dict(), os.path.join(model_dir, 'image_model.pkl'))
-		torch.save(attention_model.state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
+		torch.save(models[0].state_dict(), os.path.join(model_dir, 'question_model.pkl'))
+		torch.save(models[2].state_dict(), os.path.join(model_dir, 'image_model.pkl'))
+		torch.save(models[1].state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
 		write_status(params, epoch)
 		loss_store += [running_loss]
 		print('Epoch %d | Loss: %.4f | lr: %f'%(epoch, running_loss, lr_cur))
