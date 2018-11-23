@@ -56,6 +56,11 @@ class PlotDataset(Dataset):
 		with open(path.join(self.meta_data_dir, '{}_metadata_lbl.json'.format(self.split)), 'r') as metadata_file:
 			metadata = json.load(metadata_file)
 
+		# divide the data according to the percentage specified in params
+		num_ex = int(params['pct']*len(qa_data)/100)
+		print ('Using only %d questions'%num_ex)
+		qa_data = qa_data[:num_ex]
+		
 		if args.small_train:
 			num_ex = 100
 			print ('Using only %d questions'%num_ex)
@@ -63,9 +68,6 @@ class PlotDataset(Dataset):
 
 		# Create a map of Metadata indexed by image instead of a list
 		self.metadata_dict = {}
-		for mt in metadata:
-			self.metadata_dict[mt['image']] = mt 
-
 		# Create a Map from Question Id to Idx for __getitem__ to work correctly
 		self.qid2idx = {}
 		self.idx2qid = {}
@@ -76,8 +78,13 @@ class PlotDataset(Dataset):
 			self.idx2qid[idx] = qas['question_id']
 			self.qid2idx[qas['question_id']] = idx
 			self.qa_dict[qas['question_id']] = qas
+			self.metadata_dict[qas['image']] = {}
 			idx += 1
 
+		for mt in metadata:
+			if mt['image'] in self.metadata_dict:
+				self.metadata_dict[mt['image']] = mt 
+		
 		# Index the Questions and Answers
 		self.index_answers()
 		self.index_questions()
