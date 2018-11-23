@@ -68,7 +68,7 @@ class SAN(nn.Module):
 			for b in range(max_num_boxes):
 				img_mask[:,b] = (b < num_boxes)
 
-		if num_texts is not None:
+		if self.use_text:
 			max_num_texts = text_feats.size(1)
 			text_mask = torch.Tensor(batch_size,max_num_texts)
 			if self.use_gpu:
@@ -92,8 +92,7 @@ class SAN(nn.Module):
 			ques_emb_text_1 = self.W_qa_text_1(ques_feats) 
 			text_emb_1 = self.W_ta_1(text_feats)
 			h1_emb = self.W_p_text_1(text_emb_1 + ques_emb_text_1.unsqueeze(1)).squeeze(2)
-			if num_texts is not None:
-				h1_emb *= text_mask
+			h1_emb *= text_mask
 			p1 = self.softmax(h1_emb)
 			text_att1 = torch.bmm(p1.unsqueeze(1), text_feats).squeeze(1)
 			comb_att1 = self.W_comb_1(torch.cat((img_att1,text_att1),dim=1))
@@ -118,8 +117,7 @@ class SAN(nn.Module):
 			ques_emb_text_2 = self.W_qa_text_2(u1)
 			text_emb_2 = self.W_ta_2(text_feats) 
 			h2_emb = self.W_p_text_2(text_emb_2 + ques_emb_text_2.unsqueeze(1)).squeeze(2)
-			if num_texts is not None:
-				h2_emb *= text_mask
+			h2_emb *= text_mask
 			p2 = self.softmax(h2_emb)
 			text_att2 = torch.bmm(p2.unsqueeze(1), text_feats).squeeze(1)
 			comb_att2 = self.W_comb_1(torch.cat((img_att2,text_att2),dim=1))
@@ -129,6 +127,6 @@ class SAN(nn.Module):
 		u2 = u1 + comb_att2
 
 		# Final softmax outputs
-		scores = self.softmax(self.W_u(u2))
+		scores = self.W_u(u2)
 
 		return scores
