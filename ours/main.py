@@ -5,6 +5,7 @@ import argparse
 from utils.dataset import PlotDataset
 from models import build_models
 import json
+from trainer import train
 
 def fetch_args(parser):
 
@@ -23,7 +24,7 @@ def fetch_args(parser):
 
     # Options
     parser.add_argument('--feature_type', default='Resnet152', help='VGG16 or Resnet152')
-    parser.add_argument('--emb_size', default=300, type=int, help='the size after embedding from onehot')
+    parser.add_argument('--emb_size', default=100, type=int, help='the size after embedding from onehot')
     parser.add_argument('--hidden_size', default=1024, type=int, help='the hidden layer size of the question embedding model')
     parser.add_argument('--rnn_size', default=1024, type=int, help='size of the rnn in number of hidden nodes in each layer')
     parser.add_argument('--att_size', default=512, type=int, help='size of attention vector which refer to k in paper')
@@ -83,16 +84,17 @@ def get_extra_params(train_dataset):
     extra_params['max_num_text'] = train_dataset.max_num_text
     extra_params['ques_vocab_size'] = train_dataset.ques_vocab_size
     extra_params['ans_vocab_size'] = train_dataset.ans_vocab_size
-    extra_params['text_vocab_size'] = train_dataset.text_vocab_size
+    extra_params['text_vocab_size'] = train_dataset.ques_vocab_size
     extra_params['max_ques_seq_len'] = train_dataset.max_ques_len
+
     if params['feature_type'] == 'VGG16':
         extra_params['sfeat_img'] = 512
     else:
         extra_params['sfeat_img'] = 2048
     if params['use_pos']:
-        extra_params['sfeat_text'] = params['txt_emb_size'] + train_dataset.num_text_types
+        extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types
     else:
-        extra_params['sfeat_text'] = params['txt_emb_size'] + train_dataset.num_text_types + 4
+        extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types + 4
     extra_params['sfeat_ques'] = params['hidden_size']
 
     return extra_params
@@ -102,11 +104,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     params = fetch_args(parser)
 
-    val_dataset = PlotDataset(params, 'val_easy')
     train_dataset = PlotDataset(params, 'train')
-    
+    val_dataset = PlotDataset(params, 'val_easy')   
 
     extra_params = get_extra_params(train_dataset)
 
     models = build_models(params, extra_params)
+    
     train(models, train_dataset, val_dataset, params, extra_params)

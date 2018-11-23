@@ -367,7 +367,7 @@ class PlotDataset(Dataset):
 		bar_len = bidx
 		txt_len = txt_len + 1
 
-		return bar_bboxes, text_bboxes, text_vals, text_types, bar_len, txt_len
+		return bar_bboxes, text_bboxes, text_vals, text_bbox_type, bar_len, txt_len
 
 	def __len__(self):
 		return len(self.idx2qid)

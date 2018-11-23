@@ -21,7 +21,8 @@ def build_models(params, extra_params):
 	if params['use_text']:
 		attention_model = SAN(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], extra_params['sfeat_text'])
 
-	models.append([question_model, attention_model])
+	models.append(question_model)
+	models.append(attention_model)
 
 	if not params['load_roi']:
 
@@ -36,9 +37,9 @@ def build_models(params, extra_params):
 
 	if params['use_text']:
 
-		text_model = TextEmbedding(extra_params['text_vocab_size'], params['txt_emb_size'], extra_params['max_num_text'])
+		text_model = TextEmbedding(extra_params['text_vocab_size'], params['emb_size'], extra_params['max_num_text'])
 		models.append(text_model)
 
 	print(len(models))
-	print(models)
+	print(type(models[0]))
 	return models
