@@ -1,3 +1,10 @@
+"""
+Main module that performs the training and evaluation process
+"""
+
+from utils.dataset import PlotDataset
+from models import build_models
+
 def fetch_args(parser):
 
     parser.add_argument('--data-dir', type=str, required=True, help="The Path of the dataset containing the images, QA and metadata")
@@ -65,8 +72,28 @@ def fetch_args(parser):
 
     return params
 
+def get_extra_params(train_dataset):
+
+    extra_params = {}
+
+    extra_params['max_num_bars'] = train_dataset.max_num_bars
+    extra_params['max_num_text'] = train_dataset.max_num_text
+    extra_params['ques_vocab_size'] = train_dataset.ques_vocab_size
+    extra_params['ans_vocab_size'] = train_dataset.ans_vocab_size
+    extra_params['text_vocab_size'] = train_dataset.text_vocab_size
+    extra_params['max_ques_seq_len'] = train_dataset.max_ques_len
+
+    return extra_params
 
 if __name__ == '__main__':
+    
     parser = argparse.ArgumentParser()
     params = fetch_args(parser)
-    train(params)
+
+    train_dataset = PlotDataset(params, 'train')
+    val_dataset = PlotDataset(params, 'val_easy')
+
+    extra_params = get_extra_params(train_dataset)
+
+    models = build_models(params, extra_params)
+    train(models, train_dataset, val_dataset, params, extra_params)
