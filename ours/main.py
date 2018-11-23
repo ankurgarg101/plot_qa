@@ -24,7 +24,7 @@ def fetch_args(parser):
     # Options
     parser.add_argument('--feature_type', default='Resnet152', help='VGG16 or Resnet152')
     parser.add_argument('--emb_size', default=300, type=int, help='the size after embedding from onehot')
-    parser.add_argument('--hidden_size', default=1024, type=int, help='the hidden layer size of the model')
+    parser.add_argument('--hidden_size', default=1024, type=int, help='the hidden layer size of the question embedding model')
     parser.add_argument('--rnn_size', default=1024, type=int, help='size of the rnn in number of hidden nodes in each layer')
     parser.add_argument('--att_size', default=512, type=int, help='size of attention vector which refer to k in paper')
     parser.add_argument('--batch_size', default=16, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
@@ -85,6 +85,15 @@ def get_extra_params(train_dataset):
     extra_params['ans_vocab_size'] = train_dataset.ans_vocab_size
     extra_params['text_vocab_size'] = train_dataset.text_vocab_size
     extra_params['max_ques_seq_len'] = train_dataset.max_ques_len
+    if params['feature_type'] == 'VGG16':
+        extra_params['sfeat_img'] = 512
+    else:
+        extra_params['sfeat_img'] = 2048
+    if params['use_pos']:
+        extra_params['sfeat_text'] = params['txt_emb_size'] + train_dataset.num_text_types
+    else:
+        extra_params['sfeat_text'] = params['txt_emb_size'] + train_dataset.num_text_types + 4
+    extra_params['sfeat_ques'] = params['hidden_size']
 
     return extra_params
 
