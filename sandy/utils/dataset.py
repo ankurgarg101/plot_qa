@@ -57,7 +57,7 @@ class PlotDataset(Dataset):
 			metadata = json.load(metadata_file)
 
 		# divide the data according to the percentage specified in params
-		num_ex = int(params['pct']*len(qa_data)/100)
+		num_ex = int(args.pct*len(qa_data)/100)
 		print ('Using only %d questions'%num_ex)
 		qa_data = qa_data[:num_ex]
 		

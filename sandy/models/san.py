@@ -44,7 +44,7 @@ class SAN(nn.Module):
         ques_emb_1 = self.W_qa_1(ques_feats) 
         img_emb_1 = self.W_ia_1(img_feats)
 
-        h1_emb = self.W_p_1(img_emb_1 + ques_emb_1.unsqueeze(1)).squeeze(2)
+        h1_emb = self.W_p_1(self.tanh(img_emb_1 + ques_emb_1.unsqueeze(1))).squeeze(2)
         p1 = self.softmax(h1_emb)
 
         # Weighted sum
@@ -55,7 +55,7 @@ class SAN(nn.Module):
         ques_emb_2 = self.W_qa_2(u1)
         img_emb_2 = self.W_ia_2(img_feats)
 
-        h2_emb = self.W_p_2(img_emb_2 + ques_emb_2.unsqueeze(1)).squeeze(2)
+        h2_emb = self.W_p_2(self.tanh(img_emb_2 + ques_emb_2.unsqueeze(1))).squeeze(2)
         p2 = self.softmax(h2_emb)
 
         # Weighted sum
