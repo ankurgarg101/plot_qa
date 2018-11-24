@@ -338,8 +338,16 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			os.makedirs(model_dir)
 		
 		torch.save(models[0].state_dict(), os.path.join(model_dir, 'question_model.pkl'))
-		torch.save(models[2].state_dict(), os.path.join(model_dir, 'image_model.pkl'))
 		torch.save(models[1].state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
+
+		if not params['load_roi']:
+			torch.save(models[2].state_dict(), os.path.join(model_dir, 'image_model.pkl'))
+			if params['use_roi']:
+				torch.save(models[3].state_dict(), os.path.join(model_dir, 'roi_model.pkl'))
+		
+		if params['use_text']:
+			torch.save(models[4].state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
+		
 		write_status(params, epoch)
 		loss_store += [running_loss]
 		print('Epoch %d | Loss: %.4f | lr: %f'%(epoch, running_loss, lr_cur))
@@ -350,5 +358,6 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 		np.savetxt(os.path.join(params['checkpoint_path'], 'loss_store.txt'), np.array(loss_store), fmt='%f')
 		np.savetxt(os.path.join(params['checkpoint_path'], 'val_loss_store.txt'), np.array(val_loss_store), fmt='%f')
 		np.savetxt(os.path.join(params['checkpoint_path'], 'val_acc_store.txt'), np.array(val_acc_store), fmt='%f')
+		
 		print(loss_store)
 
