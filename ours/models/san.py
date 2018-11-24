@@ -91,6 +91,8 @@ class SAN(nn.Module):
 		p1_w = self.softmax(h1_emb)
 		if num_boxes is not None:
 			p1 = p1_w * img_mask
+		else:
+			p1 = p1_w
 
 		# Weighted sum
 		img_att1 = torch.bmm(p1.unsqueeze(1), img_ques_emb).squeeze(1)
@@ -122,6 +124,8 @@ class SAN(nn.Module):
 		p2_w = self.softmax(h2_emb)
 		if num_boxes is not None:
 			p2 = p2_w * img_mask
+		else:
+			p2 = p2_w
 
 		# Weighted sum
 		img_att2 = torch.bmm(p2.unsqueeze(1), img_ques_emb).squeeze(1)
