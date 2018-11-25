@@ -88,7 +88,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 	# Loss and optimizers
 	criterion = nn.CrossEntropyLoss()
 
-	optimizer_parameter_group = [ { 'params': m.parameters() for m in models } ]
+	optimizer_parameter_group = [ { 'params': m.parameters()} for m in models ]
 
 	if params['optim'] == 'sgd':
 		optimizer = torch.optim.SGD(optimizer_parameter_group,
