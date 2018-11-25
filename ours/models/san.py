@@ -80,7 +80,7 @@ class SAN(nn.Module):
 
 		# Stack 1
 		ques_emb_img_1 = self.W_qa_img_1(ques_feats)
-		img_ques_emb = self.W_img_ques_emb(img_feats) 
+		img_ques_emb = self.tanh(self.W_img_ques_emb(img_feats)) 
 		img_emb_1 = self.W_ia_1(img_ques_emb)
 
 		h1_emb = self.W_p_img_1(self.tanh(img_emb_1 + ques_emb_img_1.unsqueeze(1))).squeeze(2)
@@ -99,7 +99,7 @@ class SAN(nn.Module):
 		
 		if self.use_text:
 			ques_emb_text_1 = self.W_qa_text_1(ques_feats)
-			text_ques_emb = self.W_txt_ques_emb(text_feats) 
+			text_ques_emb = self.tanh(self.W_txt_ques_emb(text_feats)) 
 			text_emb_1 = self.W_ta_1(text_ques_emb)
 			h1_emb = self.W_p_text_1(self.tanh(text_emb_1 + ques_emb_text_1.unsqueeze(1))).squeeze(2)
 			#h1_emb *= text_mask

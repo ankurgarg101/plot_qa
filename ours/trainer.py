@@ -346,7 +346,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				torch.save(models[3].state_dict(), os.path.join(model_dir, 'roi_model.pkl'))
 		
 		if params['use_text']:
-			torch.save(models[4].state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
+			torch.save(models[4].state_dict(), os.path.join(model_dir, 'text_model.pkl'))
 		
 		write_status(params, epoch)
 		loss_store += [running_loss]

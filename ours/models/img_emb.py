@@ -29,5 +29,4 @@ class ImageEmbedding(nn.Module):
     def forward(self, images):
         images = images.float()
         image_feats = self.features(images)
-        
         return image_feats

@@ -30,7 +30,7 @@ def fetch_args(parser):
     parser.add_argument('--att_size', default=512, type=int, help='size of attention vector which refer to k in paper')
     parser.add_argument('--batch_size', default=4, type=int, help='what is theutils batch size in number of images per batch? (there will be x seq_per_img sentences)')
     parser.add_argument('--output_size', default=1000, type=int, help='number of output answers')
-    parser.add_argument('--rnn_layers', default=1, type=int, help='number of the rnn layer')
+    parser.add_argument('--rnn_layers', default=2, type=int, help='number of the rnn layer')
     parser.add_argument('--img_seq_size', default=196, type=int, help='number of feature regions in image')
     parser.add_argument('--dropout', default=0.5, type=float, help='dropout ratio in network')
     parser.add_argument('--epochs', default=2, type=int, help='Number of epochs to run')
