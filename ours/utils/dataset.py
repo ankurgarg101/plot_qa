@@ -330,10 +330,10 @@ class PlotDataset(Dataset):
 		for br in metadata['bars']['bboxes']:
 			for box in br:
 				center_x, center_y, w, h = box[0], box[1], box[2], box[3]
-				x1 = (center_x - w/2) / (self.org_w - 1)
-				x2 = (center_x + w/2) / (self.org_w - 1)
-				y1 = (center_y - h/2) / (self.org_h - 1)
-				y2 = (center_y + h/2) / (self.org_h - 1)
+				x1 = (center_x - w/2) #/ (self.org_w - 1)
+				x2 = (center_x + w/2) #/ (self.org_w - 1)
+				y1 = (center_y - h/2) #/ (self.org_h - 1)
+				y2 = (center_y + h/2) #/ (self.org_h - 1)
 
 				bar_bboxes[bidx][0] = x1 / self.scale_ratio
 				bar_bboxes[bidx][1] = y1 / self.scale_ratio
@@ -353,10 +353,10 @@ class PlotDataset(Dataset):
 			box = txt['bbox']
 
 			center_x, center_y, w, h = box[0], box[1], box[2], box[3]
-			x1 = (center_x - w/2) / (self.org_w - 1)
-			x2 = (center_x + w/2) / (self.org_w - 1)
-			y1 = (center_y - h/2) / (self.org_h - 1)
-			y2 = (center_y + h/2) / (self.org_h - 1)
+			x1 = (center_x - w/2) #/ (self.org_w - 1)
+			x2 = (center_x + w/2) #/ (self.org_w - 1)
+			y1 = (center_y - h/2) #/ (self.org_h - 1)
+			y2 = (center_y + h/2) #/ (self.org_h - 1)
 
 			text_bboxes[tidx][0] = x1 / self.scale_ratio
 			text_bboxes[tidx][1] = y1 / self.scale_ratio
