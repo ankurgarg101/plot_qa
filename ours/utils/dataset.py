@@ -12,6 +12,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from .indexer import Indexer
+import h5py
 
 pad_token = '<pad>'
 unk_token = '<unk>'
@@ -111,8 +112,8 @@ class PlotDataset(Dataset):
 			print('Read {} Question-Answer Pairs'.format(len(self.idx2qid)))
 			print('Max Ques Len: {}'.format(self.max_ques_len))
 
-
-		if params['use_roi'] or params['load_roi']:
+		self.roi_save_file = None
+		if params['load_roi']:
 			self.roi_save_file = h5py.File(params['roi_save_file'])
 		
 	def index_questions(self):
@@ -388,8 +389,12 @@ class PlotDataset(Dataset):
 		
 		# First, read the image
 		image_name = self.qa_dict[question_id]['image']
+		roi_feats = torch.zeros(10)
 		if self.roi_save_file is not None:
-			roi_feats = np.array(self.roi_save_file[image_name])
+			print(self.roi_save_file)
+			print(image_name)
+			roi_feats = torch.as_tensor(np.array(self.roi_save_file[image_name]),dtype=torch.float)
+
 		image_path = path.join(self.img_dir, image_name)
 		rgba_image = io.imread(image_path)
 		rgb_image = skimage.color.rgba2rgb(rgba_image)
@@ -399,6 +404,7 @@ class PlotDataset(Dataset):
 
 		bar_bboxes, text_bboxes, text_vals, text_types, bar_len, txt_len = self.get_bbox_data(self.metadata_dict[image_name])
 
+		
 		return {
 			'image': img,
 			'ques': torch.as_tensor(question_tok, dtype=torch.long),
@@ -411,5 +417,5 @@ class PlotDataset(Dataset):
 			'text_vals': torch.as_tensor(text_vals, dtype=torch.long),
 			'text_types': torch.as_tensor(text_types, dtype=torch.float),
 			'id' : image_name,
-			'roi_feats' : torch.as_tensor(roi_feats,dtype=torch.float)
+			'roi_feats' : roi_feats
 		}

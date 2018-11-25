@@ -44,22 +44,24 @@ def write_status(params, epoch):
 
 def load_models(models, params, load_model_dir):
 
-	models[0].load_state_dict(torch.load(
+	if 'ques_model' in models:
+		models['ques_model'].load_state_dict(torch.load(
 			os.path.join(load_model_dir, 'question_model.pkl')))
-		
-	models[1].load_state_dict(torch.load(
+	
+	if 'att_model' in models:
+		models['att_model'].load_state_dict(torch.load(
 			os.path.join(load_model_dir, 'attention_model.pkl')))
 
-	if not params['load_roi']:
-		models[2].load_state_dict(torch.load(
+	if 'img_model' in models:
+		models['img_model'].load_state_dict(torch.load(
 			os.path.join(load_model_dir, 'image_model.pkl')))
 
-		if params['use_roi']:
-			models[3].load_state_dict(torch.load(
-			os.path.join(load_model_dir, 'roi_model.pkl')))
+	if 'roi_model' in models:
+		models['roi_model'].load_state_dict(torch.load(
+		os.path.join(load_model_dir, 'roi_model.pkl')))
 
-	if params['use_text']:
-		models[4].load_state_dict(torch.load(
+	if 'roi_model' in models:
+		models['roi_model'].load_state_dict(torch.load(
 			os.path.join(load_model_dir, 'text_model.pkl')))
 
 	return models
@@ -220,7 +222,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
 
 			if params['use_text']:
-				text_emb = models[4].forward(text_vals)
+				text_emb = models[-1].forward(text_vals)
 				text_emb = torch.cat((text_emb, text_types), dim=2)
 			else:
 				text_emb = None
@@ -345,7 +347,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
 
 			if params['use_text']:
-				text_emb = models[4].forward(text_vals)
+				text_emb = models[-1].forward(text_vals)
 				text_emb = torch.cat((text_emb, text_types), dim=2)
 			else:
 				text_emb = None
@@ -389,7 +391,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				torch.save(models[3].state_dict(), os.path.join(model_dir, 'roi_model.pkl'))
 		
 		if params['use_text']:
-			torch.save(models[4].state_dict(), os.path.join(model_dir, 'text_model.pkl'))
+			torch.save(models[-1].state_dict(), os.path.join(model_dir, 'text_model.pkl'))
 		
 		write_status(params, epoch)
 		loss_store += [running_loss]
