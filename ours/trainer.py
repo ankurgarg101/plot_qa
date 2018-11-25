@@ -10,6 +10,7 @@ import os
 import torch
 import torch.nn as nn
 import torchvision
+import h5py
 
 def adjust_learning_rate(optimizer, epoch, lr, learning_rate_decay_every):
 	
@@ -120,7 +121,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 	lr_cur = params['learning_rate']
 
-	if params['roi_save_file']:
+	if params['use_roi'] or params['load_roi']:
 		roi_save_file = h5py.File(params['roi_save_file'])
 
 	# Train loop
@@ -151,7 +152,6 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_types = batch['text_types']
 			ids = batch['id']
 
-
 			# Sort the examples in reverse order of sentence length
 			_, sort_idxes = torch.sort(ques_lens, descending=True)
 			images = images[sort_idxes, :, :, :]
@@ -165,7 +165,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_bboxes = text_bboxes[sort_idxes]
 			text_vals = text_vals[sort_idxes]
 			text_types = text_types[sort_idxes]
-			ids = ids[sort_idxes]
+			ids = [ids[i] for i in sort_idxes]
+			print(ids)
 			
 			# print (images)
 			# print (questions)
@@ -205,8 +206,11 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					if params['roi_save_file']:
 						for b in range(params['batch_size']):
 							curr_id = ids[b]
-							curr_emb = img_emb[b,:].numpy()
-							roi_save_file.create_dataset(curr_id,curr_emb)
+							curr_emb = img_emb[b,:].cpu().numpy()
+							print(curr_id)
+							print(curr_emb.shape)
+							if curr_id not in list(roi_save_file.keys()):
+								roi_save_file.create_dataset(curr_id,data=curr_emb)
 
 
 				else:
@@ -273,6 +277,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			_, sort_idxes = torch.sort(ques_lens, descending=True)
 			images = images[sort_idxes, :, :, :]
 			questions = questions[sort_idxes, :]
+			ques_lens = ques_lens[sort_idxes]
 			answers = answers[sort_idxes, :]
 			answers = answers.squeeze(1)
 			bar_lens = bar_lens[sort_idxes]
@@ -291,7 +296,6 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				images = images.cuda()
 				questions = questions.cuda()
 				answers = answers.cuda()
-				ques_lens = ques_lens.cuda()
 				bar_lens = bar_lens.cuda()
 				text_lens = text_lens.cuda()
 				bar_bboxes = bar_bboxes.cuda()
