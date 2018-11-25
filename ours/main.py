@@ -63,6 +63,8 @@ def fetch_args(parser):
     parser.add_argument('--seed', default=1234, type=int, help='random number generator seed to use')
     parser.add_argument('--print_params', default=1, type=int, help='pass 0 to turn off printing input parameters')
 
+    parser.add_argument('--roi_save_file', default='roi_dump.h5', help='roi dump')
+
     #ablation
     parser.add_argument('--use_text', dest = 'use_text', default=False, action = 'store_true', help = 'Use Text supervision in the images')
     parser.add_argument('--use_roi', dest = 'use_roi', default=False, action = 'store_true', help = 'Use ROI features for the bbox regions')
