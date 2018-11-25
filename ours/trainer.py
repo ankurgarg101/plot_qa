@@ -151,6 +151,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_vals = batch['text_vals']
 			text_types = batch['text_types']
 			ids = batch['id']
+			if params['load_roi']:
+				roi_feats = batch['roi_feats']
 
 			# Sort the examples in reverse order of sentence length
 			_, sort_idxes = torch.sort(ques_lens, descending=True)
@@ -166,7 +168,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_vals = text_vals[sort_idxes]
 			text_types = text_types[sort_idxes]
 			ids = [ids[i] for i in sort_idxes]
-			print(ids)
+			if params['load_roi']:
+				roi_feats = roi_feats[sort_idxes]
 			
 			# print (images)
 			# print (questions)
@@ -184,13 +187,16 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				text_vals = text_vals.cuda()
 				text_types = text_types.cuda()
 				ids = ids
+				if params['load_roi']:
+					roi_feats = roi_feats.cuda()
 
 			optimizer.zero_grad()
 			
 			ques_emb = models[0].forward(questions, ques_lens)
 			
 			if params['load_roi']:
-				raise('Loading Not done')
+				img_emb = roi_feats
+				#raise('Loading Not done')
 			else:
 				img_emb = models[2].forward(images)
 
@@ -207,11 +213,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 						for b in range(params['batch_size']):
 							curr_id = ids[b]
 							curr_emb = img_emb[b,:].cpu().numpy()
-							print(curr_id)
-							print(curr_emb.shape)
 							if curr_id not in list(roi_save_file.keys()):
 								roi_save_file.create_dataset(curr_id,data=curr_emb)
-
 
 				else:
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
@@ -272,6 +275,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_bboxes = batch['text_bboxes']
 			text_vals = batch['text_vals']
 			text_types = batch['text_types']
+			ids = batch['id']
+			if params['load_roi']:
+				roi_feats = batch['roi_feats']
 
 			# Sort the examples in reverse order of sentence length
 			_, sort_idxes = torch.sort(ques_lens, descending=True)
@@ -286,6 +292,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_bboxes = text_bboxes[sort_idxes]
 			text_vals = text_vals[sort_idxes]
 			text_types = text_types[sort_idxes]
+			ids = [ids[i] for i in sort_idxes]
+			if params['load_roi']:
+				roi_feats = roi_feats[sort_idxes]
 			
 			# print (images)
 			# print (questions)
@@ -302,11 +311,17 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				text_bboxes = text_bboxes.cuda()
 				text_vals = text_vals.cuda()
 				text_types = text_types.cuda()
+				ids = ids
+				if params['load_roi']:
+					roi_feats = roi_feats.cuda()
 
+			optimizer.zero_grad()
+			
 			ques_emb = models[0].forward(questions, ques_lens)
 			
 			if params['load_roi']:
-				raise('Loading Not done')
+				img_emb = roi_feats
+				#raise('Loading Not done')
 			else:
 				img_emb = models[2].forward(images)
 
@@ -317,6 +332,14 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 						box_idx = box_idx.cuda()
 
 					img_emb = models[3].forward(img_emb, bar_bboxes, box_idx )
+
+					
+					if params['roi_save_file']:
+						for b in range(params['batch_size']):
+							curr_id = ids[b]
+							curr_emb = img_emb[b,:].cpu().numpy()
+							if curr_id not in list(roi_save_file.keys()):
+								roi_save_file.create_dataset(curr_id,data=curr_emb)
 
 				else:
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
