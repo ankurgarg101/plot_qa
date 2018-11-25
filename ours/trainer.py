@@ -261,7 +261,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			
 		if params['use_gpu'] and torch.cuda.is_available():
 			pred = lambda x: np.argmax(x.cpu().detach().numpy(), axis=1)
-		else:    
+		else:	 
 			pred = lambda x: np.argmax(x.detach().numpy(), axis=1)
 
 		running_val_loss = 0.0
@@ -369,12 +369,12 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				answers = answers.cpu()
 
 			output_preds = pred(output)
-			accuracies.extend( output_preds ==  answers.detach().numpy())
+			accuracies.extend( output_preds ==	answers.detach().numpy())
 
 		val_loss_store += [running_val_loss]
 		val_acc_store += [np.mean(accuracies)]
 
-		print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))        
+		print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))		
 
 		print("Saving models")
 		model_dir = os.path.join(params['checkpoint_path'])
