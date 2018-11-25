@@ -120,6 +120,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 	lr_cur = params['learning_rate']
 
+	if params['roi_save_file']:
+		roi_save_file = h5py.File(params['roi_save_file'])
+
 	# Train loop
 	for epoch in range(params['resume_from_epoch'], params['epochs']+1):
 
@@ -146,6 +149,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_bboxes = batch['text_bboxes']
 			text_vals = batch['text_vals']
 			text_types = batch['text_types']
+			ids = batch['id']
 
 
 			# Sort the examples in reverse order of sentence length
@@ -161,6 +165,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			text_bboxes = text_bboxes[sort_idxes]
 			text_vals = text_vals[sort_idxes]
 			text_types = text_types[sort_idxes]
+			ids = ids[sort_idxes]
 			
 			# print (images)
 			# print (questions)
@@ -177,6 +182,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				text_bboxes = text_bboxes.cuda()
 				text_vals = text_vals.cuda()
 				text_types = text_types.cuda()
+				ids = ids
 
 			optimizer.zero_grad()
 			
@@ -194,6 +200,15 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 						box_idx = box_idx.cuda()
 
 					img_emb = models[3].forward(img_emb, bar_bboxes, box_idx )
+
+					
+					if params['roi_save_file']:
+						for b in range(params['batch_size']):
+							curr_id = ids[b]
+							curr_emb = img_emb[b,:].numpy()
+							roi_save_file.create_dataset(curr_id,curr_emb)
+
+
 				else:
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
 
@@ -298,6 +313,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 						box_idx = box_idx.cuda()
 
 					img_emb = models[3].forward(img_emb, bar_bboxes, box_idx )
+
 				else:
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
 

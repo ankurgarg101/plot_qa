@@ -404,4 +404,5 @@ class PlotDataset(Dataset):
 			'text_bboxes': torch.as_tensor(text_bboxes, dtype=torch.float),
 			'text_vals': torch.as_tensor(text_vals, dtype=torch.long),
 			'text_types': torch.as_tensor(text_types, dtype=torch.float)
+			'id' : image_name
 		}
