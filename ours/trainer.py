@@ -170,7 +170,6 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			if (params['use_gpu'] and torch.cuda.is_available()):
 				images = images.cuda()
 				questions = questions.cuda()
-				ques_lens = ques_lens.cuda()
 				answers = answers.cuda()
 				bar_lens = bar_lens.cuda()
 				text_lens = text_lens.cuda()
@@ -259,7 +258,6 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			_, sort_idxes = torch.sort(ques_lens, descending=True)
 			images = images[sort_idxes, :, :, :]
 			questions = questions[sort_idxes, :]
-			ques_lens = ques_lens[sort_idxes]
 			answers = answers[sort_idxes, :]
 			answers = answers.squeeze(1)
 			bar_lens = bar_lens[sort_idxes]
