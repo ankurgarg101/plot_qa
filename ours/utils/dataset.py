@@ -335,10 +335,10 @@ class PlotDataset(Dataset):
 				y1 = (center_y - h/2) / (self.org_h - 1)
 				y2 = (center_y + h/2) / (self.org_h - 1)
 
-				bar_bboxes[bidx][0] = x1 / self.scale_ratio
-				bar_bboxes[bidx][1] = y1 / self.scale_ratio
-				bar_bboxes[bidx][2] = x2 / self.scale_ratio
-				bar_bboxes[bidx][3] = y2 / self.scale_ratio
+				bar_bboxes[bidx][0] = x1 #/ self.scale_ratio
+				bar_bboxes[bidx][1] = y1 #/ self.scale_ratio
+				bar_bboxes[bidx][2] = x2 #/ self.scale_ratio
+				bar_bboxes[bidx][3] = y2 #/ self.scale_ratio
 
 				bidx += 1
 
@@ -358,10 +358,10 @@ class PlotDataset(Dataset):
 			y1 = (center_y - h/2) / (self.org_h - 1)
 			y2 = (center_y + h/2) / (self.org_h - 1)
 
-			text_bboxes[tidx][0] = x1 / self.scale_ratio
-			text_bboxes[tidx][1] = y1 / self.scale_ratio
-			text_bboxes[tidx][2] = x2 / self.scale_ratio
-			text_bboxes[tidx][3] = y2 / self.scale_ratio
+			text_bboxes[tidx][0] = x1 #/ self.scale_ratio
+			text_bboxes[tidx][1] = y1 #/ self.scale_ratio
+			text_bboxes[tidx][2] = x2 #/ self.scale_ratio
+			text_bboxes[tidx][3] = y2 #/ self.scale_ratio
 
 			txt_len = max(txt_len, tidx)
 
