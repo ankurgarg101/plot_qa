@@ -3,6 +3,7 @@ Module that implements uses the PyTorch dataset interface to load the dataset an
 """
 
 from os import path
+import os
 from glob import glob
 import numpy as np
 import skimage
@@ -24,7 +25,7 @@ class PlotDataset(Dataset):
 	Dataset class that loads the DVQA dataset
 	"""
 
-	def __init__(self, params, split):
+	def __init__(self, params, mode):
 
 		super(PlotDataset, self).__init__()
 
@@ -33,7 +34,8 @@ class PlotDataset(Dataset):
 		self.meta_data_dir = path.join(self.data_dir, 'metadata')
 		self.qa_dir = path.join(self.data_dir, 'qa')
 
-		self.split = split
+		self.mode = mode
+		self.split = params['split']
 		self.use_dyn_dict = params['use_dyn_dict']
 		self.params = params
 
@@ -58,11 +60,19 @@ class PlotDataset(Dataset):
 			metadata = json.load(metadata_file)
 
 		# divide the data according to the percentage specified in params
-		num_ex = int(params['pct']*len(qa_data)/100)
 		
+		if self.mode == 'train':
+			start_idx = 0
+			end_idx = int(0.99*len(qa_data))
+			num_ex = int(params['pct']*len(qa_data)/100)
+		else:
+			start_idx = int(0.99*len(qa_data))
+			end_idx = len(qa_data)
+			num_ex = end_idx - start_idx
+
 		if params['random']:
 			np.random.seed(params['seed'])
-			permut = np.random.permutation(len(qa_data))[:num_ex]
+			permut = np.random.permutation(range(start_idx, end_idx))[:num_ex]
 			print(permut)
 			qa_data = [ qa_data[pi] for pi in permut ]
 
@@ -133,7 +143,8 @@ class PlotDataset(Dataset):
 		if self.use_dyn_dict:
 			suffix += 'dy'
 
-		if self.split == 'train':
+		if self.mode == 'train':
+			print('Creating an index')
 			self.ques_indexer = Indexer()
 			
 			# Add the Pad and UNK tokens at the start
@@ -180,6 +191,8 @@ class PlotDataset(Dataset):
 					for	wrd in question_wrds:
 						self.ques_indexer.get_index(wrd)
 					
+			if not path.exists(path.join(self.params['idx_dir'])):
+				os.makedirs(path.join(self.params['idx_dir']))
 
 			# Save the Indexer to be used for 
 			self.ques_indexer.dump(path.join(self.params['idx_dir'], 'question_indexer_{}.json'.format(suffix)))
@@ -203,8 +216,8 @@ class PlotDataset(Dataset):
 		if self.use_dyn_dict:
 			suffix += 'dy'
 
-		if self.split == 'train':
-
+		if self.mode == 'train':
+			print('Creating an index')
 			self.ans_indexer = Indexer()
 
 			# Add the Pad and UNK tokens at the start
@@ -230,6 +243,9 @@ class PlotDataset(Dataset):
 					# If not using dynamic dictionary, add all answers in the dictionary
 					
 					self.ans_indexer.get_index(qa['answer'])
+
+			if not path.exists(path.join(self.params['idx_dir'])):
+				os.makedirs(path.join(self.params['idx_dir']))
 
 			# Save the Indexer to be used for 
 			self.ans_indexer.dump(path.join(self.params['idx_dir'], 'answer_indexer_{}.json'.format(suffix)))
