@@ -244,7 +244,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 			loss = criterion(output, answers)
 			
-			all_loss_store += [loss.item()]
+			all_loss_store += [[epoch, loss.item()]]
 			loss.backward()
 			optimizer.step()
 
@@ -373,8 +373,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			output_preds = pred(output)
 			accuracies.extend( output_preds ==  answers.detach().numpy())
 
-		val_loss_store += [running_val_loss]
-		val_acc_store += [np.mean(accuracies)]
+		val_loss_store += [[epoch, running_val_loss]]
+		val_acc_store += [[epoch, np.mean(accuracies)]]
 
 		print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))        
 
@@ -396,7 +396,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 			torch.save(models['text_model'].state_dict(), os.path.join(model_dir, 'text_model.pkl'))
 		
 		write_status(params, epoch)
-		loss_store += [running_loss]
+		loss_store += [[epoch, running_loss]]
 		print('Epoch %d | Loss: %.4f | lr: %f'%(epoch, running_loss, lr_cur))
 
 		# torch.save(question_model.state_dict(), 'question_model'+str(epoch)+'.pkl')
