@@ -18,6 +18,7 @@ def fetch_args(parser):
     parser.add_argument('--small_train', dest='small_train', default=False, action='store_true', help='For training on a small training set')
 
     parser.add_argument('--pct', default=1, type=int, help="Percentage of data to be used")
+    parser.add_argument('--random', default=False, action="store_true", help="Randomly select the data while selecting a subset")
 
     # TODO: To support resuming from previous checkpoint
     # parser.add_argument('--warm-restart', )
