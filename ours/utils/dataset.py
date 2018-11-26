@@ -388,7 +388,7 @@ class PlotDataset(Dataset):
 		# First, read the image
 		self.roi_save_file = None
 		if self.params['load_roi']:
-			self.roi_save_file = h5py.File(self.params['roi_save_file'])
+			self.roi_save_file = h5py.File(self.params['roi_save_file'],'r')
 		image_name = self.qa_dict[question_id]['image']
 		roi_feats = torch.zeros(10)
 		if self.roi_save_file is not None:

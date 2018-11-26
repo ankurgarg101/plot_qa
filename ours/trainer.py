@@ -71,8 +71,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 	params = check_restart_conditions(params)
 	
 	# Construct Data loader
-	train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True, num_workers=8)
-	val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'], num_workers=8)
+	train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=params['batch_size'], shuffle=True, num_workers=1)
+	val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=params['batch_size'], num_workers=1)
 
 	if params['use_gpu'] and torch.cuda.is_available():
 		print('Initialized Cuda Models')
