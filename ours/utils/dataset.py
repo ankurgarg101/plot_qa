@@ -59,8 +59,17 @@ class PlotDataset(Dataset):
 
 		# divide the data according to the percentage specified in params
 		num_ex = int(params['pct']*len(qa_data)/100)
-		print ('Using only %d questions'%num_ex)
-		qa_data = qa_data[:num_ex]
+		
+		if params['random']:
+			np.random.seed(params['seed'])
+			permut = np.random.permutation(len(qa_data))[:num_ex]
+			print(permut)
+			qa_data = [ qa_data[pi] for pi in permut ]
+
+		else:
+			qa_data = qa_data[:num_ex]
+
+		print ('Using only %d questions'%len(qa_data))
 
 		if params['small_train']:
 			num_ex = 100
