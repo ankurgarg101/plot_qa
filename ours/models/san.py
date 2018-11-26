@@ -65,18 +65,28 @@ class SAN(nn.Module):
 		if num_boxes is not None:
 			max_num_boxes = img_feats.size(1)
 			img_mask = torch.Tensor(batch_size,max_num_boxes)
+			inv_img_mask = torch.Tensor(batch_size,max_num_boxes)
+			inv_img_mask = inv_img_mask.type(torch.ByteTensor)
 			if self.use_gpu:
 				img_mask = img_mask.cuda()
+				inv_img_mask = inv_img_mask.cuda()
+			# for b in range(max_num_boxes):
+			# 	img_mask[:,b] = (b < num_boxes)
 			for b in range(max_num_boxes):
-				img_mask[:,b] = (b < num_boxes)
+				inv_img_mask[:, b] = (b >= num_boxes)
 
 		if self.use_text:
 			max_num_texts = text_feats.size(1)
 			text_mask = torch.Tensor(batch_size,max_num_texts)
+			inv_text_mask = torch.Tensor(batch_size,max_num_texts)
+			inv_text_mask = inv_text_mask.type(torch.ByteTensor)			
 			if self.use_gpu:
 				text_mask = text_mask.cuda()
+				inv_text_mask = inv_text_mask.cuda()
+			# for b in range(max_num_texts):
+			# 	text_mask[:,b] = (b < num_texts)
 			for b in range(max_num_texts):
-				text_mask[:,b] = (b < num_texts)
+				inv_text_mask[:, b] = (b >= num_texts)
 
 		# Stack 1
 		ques_emb_img_1 = self.W_qa_img_1(ques_feats)
@@ -87,12 +97,11 @@ class SAN(nn.Module):
 
 		#if num_boxes is not None:
 		#	h1_emb *= img_mask
-		
-		p1_w = self.softmax(h1_emb)
+
 		if num_boxes is not None:
-			p1 = p1_w * img_mask
-		else:
-			p1 = p1_w
+			h1_emb.data.masked_fill_(inv_img_mask, -float("inf"))
+		
+		p1 = self.softmax(h1_emb)
 
 		# Weighted sum
 		img_att1 = torch.bmm(p1.unsqueeze(1), img_ques_emb).squeeze(1)
@@ -103,8 +112,11 @@ class SAN(nn.Module):
 			text_emb_1 = self.W_ta_1(text_ques_emb)
 			h1_emb = self.W_p_text_1(self.tanh(text_emb_1 + ques_emb_text_1.unsqueeze(1))).squeeze(2)
 			#h1_emb *= text_mask
-			p1_w = self.softmax(h1_emb)
-			p1 = p1_w * text_mask
+
+			h1_emb.data.masked_fill_(inv_text_mask, -float("inf"))
+
+			p1 = self.softmax(h1_emb)
+			# p1 = p1_w * text_mask
 			text_att1 = torch.bmm(p1.unsqueeze(1), text_ques_emb).squeeze(1)
 			#comb_att1 = self.W_comb_1(torch.cat((img_att1,text_att1),dim=1))
 			comb_att1 = img_att1 + text_att1
@@ -121,11 +133,11 @@ class SAN(nn.Module):
 		h2_emb = self.W_p_img_2(self.tanh(img_emb_2 + ques_emb_img_2.unsqueeze(1))).squeeze(2)
 		#if num_boxes is not None:
 		#	h2_emb *= img_mask
-		p2_w = self.softmax(h2_emb)
+
 		if num_boxes is not None:
-			p2 = p2_w * img_mask
-		else:
-			p2 = p2_w
+			h2_emb.data.masked_fill_(inv_img_mask, -float("inf"))
+
+		p2 = self.softmax(h2_emb)
 
 		# Weighted sum
 		img_att2 = torch.bmm(p2.unsqueeze(1), img_ques_emb).squeeze(1)
@@ -135,8 +147,11 @@ class SAN(nn.Module):
 			text_emb_2 = self.W_ta_2(text_ques_emb) 
 			h2_emb = self.W_p_text_2(self.tanh(text_emb_2 + ques_emb_text_2.unsqueeze(1))).squeeze(2)
 			#h2_emb *= text_mask
-			p2_w = self.softmax(h2_emb)
-			p2 = p2_w * text_mask
+
+			h2_emb.data.masked_fill_(inv_text_mask, -float("inf"))
+
+			p2 = self.softmax(h2_emb)
+			# p2 = p2_w * text_mask
 			text_att2 = torch.bmm(p2.unsqueeze(1), text_ques_emb).squeeze(1)
 			#comb_att2 = self.W_comb_1(torch.cat((img_att2,text_att2),dim=1))
 			comb_att2 = img_att2 + text_att2

@@ -60,8 +60,8 @@ def load_models(models, params, load_model_dir):
 		models['roi_model'].load_state_dict(torch.load(
 		os.path.join(load_model_dir, 'roi_model.pkl')))
 
-	if 'roi_model' in models:
-		models['roi_model'].load_state_dict(torch.load(
+	if 'text_model' in models:
+		models['text_model'].load_state_dict(torch.load(
 			os.path.join(load_model_dir, 'text_model.pkl')))
 
 	return models
