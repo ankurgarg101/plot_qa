@@ -111,10 +111,8 @@ class PlotDataset(Dataset):
 		if params['debug']:
 			print('Read {} Question-Answer Pairs'.format(len(self.idx2qid)))
 			print('Max Ques Len: {}'.format(self.max_ques_len))
+			print('Images', list(self.metadata_dict.keys()))
 
-		self.roi_save_file = None
-		if params['load_roi']:
-			self.roi_save_file = h5py.File(params['roi_save_file'])
 		
 	def index_questions(self):
 
@@ -388,11 +386,14 @@ class PlotDataset(Dataset):
 		question_id = self.idx2qid[idx]
 		
 		# First, read the image
+		self.roi_save_file = None
+		if self.params['load_roi']:
+			self.roi_save_file = h5py.File(self.params['roi_save_file'])
 		image_name = self.qa_dict[question_id]['image']
 		roi_feats = torch.zeros(10)
 		if self.roi_save_file is not None:
-			print(self.roi_save_file)
-			print(image_name)
+			#print(self.roi_save_file)
+			#print(image_name)
 			roi_feats = torch.as_tensor(np.array(self.roi_save_file[image_name]),dtype=torch.float)
 
 		image_path = path.join(self.img_dir, image_name)

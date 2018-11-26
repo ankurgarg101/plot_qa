@@ -76,7 +76,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 	if params['use_gpu'] and torch.cuda.is_available():
 		print('Initialized Cuda Models')
-		models = [ m.cuda() for m in models ]
+		
+		for mname in models:
+			models[mname] = models[mname].cuda()
 
 	if params['resume_from_epoch'] >= 1:
 		
@@ -91,7 +93,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 	# Loss and optimizers
 	criterion = nn.CrossEntropyLoss()
 
-	optimizer_parameter_group = [ { 'params': m.parameters()} for m in models ]
+	optimizer_parameter_group = [ { 'params': models[m].parameters()} for m in models.keys() ]
 
 	if params['optim'] == 'sgd':
 		optimizer = torch.optim.SGD(optimizer_parameter_group,
@@ -130,8 +132,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 	for epoch in range(params['resume_from_epoch'], params['epochs']+1):
 
 		# Call train() on all models for training
-		for m in models:
-			m.train()
+		for m in models.keys():
+			models[m].train()
 		
 		if epoch > params['learning_rate_decay_start']:
 			lr_cur = adjust_learning_rate(optimizer, epoch - 1 - params['learning_rate_decay_start'] + params['learning_rate_decay_every'],
@@ -194,13 +196,13 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 			optimizer.zero_grad()
 			
-			ques_emb = models[0].forward(questions, ques_lens)
+			ques_emb = models['ques_model'].forward(questions, ques_lens)
 			
 			if params['load_roi']:
 				img_emb = roi_feats
 				#raise('Loading Not done')
 			else:
-				img_emb = models[2].forward(images)
+				img_emb = models['img_model'].forward(images)
 
 				if params['use_roi']:
 
@@ -208,7 +210,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					if (params['use_gpu'] and torch.cuda.is_available()):
 						box_idx = box_idx.cuda()
 
-					img_emb = models[3].forward(img_emb, bar_bboxes, box_idx )
+					img_emb = models['roi_model'].forward(img_emb, bar_bboxes, box_idx )
 
 					
 					if params['roi_save_file']:
@@ -222,7 +224,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
 
 			if params['use_text']:
-				text_emb = models[-1].forward(text_vals)
+				text_emb = models['text_model'].forward(text_vals)
 				text_emb = torch.cat((text_emb, text_types), dim=2)
 			else:
 				text_emb = None
@@ -236,9 +238,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
 			
 			if params['use_roi'] or params['load_roi']:
-				output = models[1].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens)
 			else:
-				output = models[1].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens)
 
 			loss = criterion(output, answers)
 			
@@ -257,11 +259,11 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 		accuracies = []
 		# Call train() on all models for training
 		for m in models:
-			m.eval()
+			models[m].eval()
 			
 		if params['use_gpu'] and torch.cuda.is_available():
 			pred = lambda x: np.argmax(x.cpu().detach().numpy(), axis=1)
-		else:	 
+		else:    
 			pred = lambda x: np.argmax(x.detach().numpy(), axis=1)
 
 		running_val_loss = 0.0
@@ -319,13 +321,13 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 			optimizer.zero_grad()
 			
-			ques_emb = models[0].forward(questions, ques_lens)
+			ques_emb = models['ques_model'].forward(questions, ques_lens)
 			
 			if params['load_roi']:
 				img_emb = roi_feats
 				#raise('Loading Not done')
 			else:
-				img_emb = models[2].forward(images)
+				img_emb = models['img_model'].forward(images)
 
 				if params['use_roi']:
 
@@ -333,7 +335,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					if (params['use_gpu'] and torch.cuda.is_available()):
 						box_idx = box_idx.cuda()
 
-					img_emb = models[3].forward(img_emb, bar_bboxes, box_idx )
+					img_emb = models['roi_model'].forward(img_emb, bar_bboxes, box_idx )
 
 					
 					if params['roi_save_file']:
@@ -347,7 +349,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
 
 			if params['use_text']:
-				text_emb = models[-1].forward(text_vals)
+				text_emb = models['text_model'].forward(text_vals)
 				text_emb = torch.cat((text_emb, text_types), dim=2)
 			else:
 				text_emb = None
@@ -361,20 +363,20 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
 			
 			if params['use_roi'] or params['load_roi']:
-				output = models[1].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens)
 			else:
-				output = models[1].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens)
 
 			if (params['use_gpu'] and torch.cuda.is_available()):
 				answers = answers.cpu()
 
 			output_preds = pred(output)
-			accuracies.extend( output_preds ==	answers.detach().numpy())
+			accuracies.extend( output_preds ==  answers.detach().numpy())
 
 		val_loss_store += [running_val_loss]
 		val_acc_store += [np.mean(accuracies)]
 
-		print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))		
+		print('Epoch [%d/%d], Val Accurracy: %.4f' % (epoch, params['epochs'], np.mean(accuracies)))        
 
 		print("Saving models")
 		model_dir = os.path.join(params['checkpoint_path'])
@@ -382,16 +384,16 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 		if not os.path.exists(model_dir):
 			os.makedirs(model_dir)
 		
-		torch.save(models[0].state_dict(), os.path.join(model_dir, 'question_model.pkl'))
-		torch.save(models[1].state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
+		torch.save(models['ques_model'].state_dict(), os.path.join(model_dir, 'question_model.pkl'))
+		torch.save(models['att_model'].state_dict(), os.path.join(model_dir, 'attention_model.pkl'))
 
 		if not params['load_roi']:
-			torch.save(models[2].state_dict(), os.path.join(model_dir, 'image_model.pkl'))
+			torch.save(models['img_model'].state_dict(), os.path.join(model_dir, 'image_model.pkl'))
 			if params['use_roi']:
-				torch.save(models[3].state_dict(), os.path.join(model_dir, 'roi_model.pkl'))
+				torch.save(models['roi_model'].state_dict(), os.path.join(model_dir, 'roi_model.pkl'))
 		
 		if params['use_text']:
-			torch.save(models[-1].state_dict(), os.path.join(model_dir, 'text_model.pkl'))
+			torch.save(models['text_model'].state_dict(), os.path.join(model_dir, 'text_model.pkl'))
 		
 		write_status(params, epoch)
 		loss_store += [running_loss]
