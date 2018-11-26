@@ -214,7 +214,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 					
 					if params['roi_save_file']:
-						for b in range(params['batch_size']):
+						for b in range(len(ids)):
 							curr_id = ids[b]
 							curr_emb = img_emb[b,:].cpu().numpy()
 							if curr_id not in list(roi_save_file.keys()):
@@ -339,7 +339,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 					
 					if params['roi_save_file']:
-						for b in range(params['batch_size']):
+						for b in range(len(ids)):
 							curr_id = ids[b]
 							curr_emb = img_emb[b,:].cpu().numpy()
 							if curr_id not in list(roi_save_file.keys()):
