@@ -6,6 +6,7 @@ from utils.dataset import PlotDataset
 from models import build_models
 import json
 from trainer import train
+import os
 
 def fetch_args(parser):
 
@@ -104,6 +105,14 @@ def get_extra_params(train_dataset):
 
     return extra_params
 
+def save_json(data, ddir, fname):
+
+    if not os.path.exists(ddir):
+        os.makedirs(ddir)
+
+    with open(os.path.join(ddir, fname), 'w') as f:
+        json.dump(data, f, indent=4)
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
@@ -113,6 +122,9 @@ if __name__ == '__main__':
     val_dataset = PlotDataset(params, 'val_easy')   
 
     extra_params = get_extra_params(train_dataset)
+
+    save_json(params, params['checkpoint_path'], 'params.json')
+    save_json(extra_params, params['checkpoint_path'], 'extra_params.json')
 
     models = build_models(params, extra_params)
     
