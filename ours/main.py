@@ -72,6 +72,8 @@ def fetch_args(parser):
     parser.add_argument('--use_roi', dest = 'use_roi', default=False, action = 'store_true', help = 'Use ROI features for the bbox regions')
     parser.add_argument('--use_pos', dest = 'use_pos', default=False, action = 'store_true', help = 'Use positional features from bboxes for text and bars')
     parser.add_argument('--load_roi', dest = 'load_roi', default=False, action = 'store_true', help = 'Load and use precomputed positional features from bboxes for text and bars')
+    parser.add_argument('--use_global_img', default=False, action='store_true', help="Use global Image features as well")
+
     args = parser.parse_args()
     params = vars(args)                     # convert to ordinary dict
     
@@ -94,14 +96,22 @@ def get_extra_params(train_dataset):
 
     if params['feature_type'] == 'VGG16':
         extra_params['sfeat_img'] = 512
+        # For using global image features as well in the model
+        extra_params['img_feat_size'] = 512
     else:
         extra_params['sfeat_img'] = 2048
+        # For using global image features as well in the model
+        extra_params['img_feat_size'] = 2048
+
     if params['use_pos']:
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types + 4
         extra_params['sfeat_img'] += 4
     else:
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types
     extra_params['sfeat_ques'] = params['hidden_size']
+
+    if params['use_global_img']:
+        extra_params['img_feat_size'] = None
 
     return extra_params
 

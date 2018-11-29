@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 
 class SAN(nn.Module):
-	def __init__(self, input_img_size, input_ques_size, att_size, output_size, use_gpu, input_text_size=None):
+	def __init__(self, input_img_size, input_ques_size, att_size, output_size, use_gpu, input_text_size=None, img_feat_size=None):
 		
 		super(SAN, self).__init__()
 		self.use_gpu = use_gpu
@@ -24,6 +24,14 @@ class SAN(nn.Module):
 		else:
 			self.use_text = True
 
+		if img_feat_size is None:
+			self.use_global_img = False
+		else:
+			self.use_global_img = True
+			self.img_feat_size = img_feat_size
+
+		print('Using Global Img Feats', self.use_global_img)
+
 		# Specify the non-linearities
 		self.tanh = nn.Tanh()
 		self.softmax = nn.Softmax(dim=1)
@@ -34,6 +42,12 @@ class SAN(nn.Module):
 		self.W_ia_1 = nn.Linear(input_ques_size, att_size, bias=False)
 		self.W_p_img_1 = nn.Linear(att_size, 1)
 		#self.W_comb_1 = nn.Linear(self.input_img_size,self.input_ques_size)
+		
+		if self.use_global_img:
+			self.W_qa_global_img_1 = nn.Linear(input_ques_size, att_size)
+			self.W_global_img_ques_emb = nn.Linear(img_feat_size, input_ques_size)
+			self.W_global_ia_1 = nn.Linear(input_ques_size, att_size, bias=False)
+			self.W_p_global_img_1 = nn.Linear(att_size, 1)
 
 		if self.input_text_size is not None:
 			self.W_qa_text_1 = nn.Linear(input_ques_size, att_size)
@@ -49,6 +63,11 @@ class SAN(nn.Module):
 		self.W_p_img_2 = nn.Linear(att_size, 1)
 		#self.W_comb_2 = nn.Linear(self.input_img_size,self.input_ques_size)
 
+		if self.use_global_img:
+			self.W_qa_global_img_2 = nn.Linear(input_ques_size, att_size)
+			self.W_global_ia_2 = nn.Linear(input_ques_size, att_size, bias=False)
+			self.W_p_global_img_2 = nn.Linear(att_size, 1)
+
 		if self.input_text_size is not None:
 			self.W_qa_text_2 = nn.Linear(input_ques_size, att_size)
 			self.W_ta_2 = nn.Linear(input_ques_size, att_size, bias=False)
@@ -59,7 +78,7 @@ class SAN(nn.Module):
 		# Final fc layer
 		self.W_u = nn.Linear(input_ques_size, output_size)
 
-	def forward(self, ques_feats, img_feats, num_boxes = None, text_feats = None, num_texts = None):  # ques_feats -- [batch, d] | img_feats -- [batch_size, img_seq_size/max_num_bars, input_img_size] | text_feats -- [batch_size,max_num_text,input_text_size]
+	def forward(self, ques_feats, img_feats, num_boxes = None, text_feats = None, num_texts = None, global_img_feats=None):  # ques_feats -- [batch, d] | img_feats -- [batch_size, img_seq_size/max_num_bars, input_img_size] | text_feats -- [batch_size,max_num_text,input_text_size]
 		batch_size = ques_feats.size(0)
 
 		if num_boxes is not None:
@@ -124,6 +143,18 @@ class SAN(nn.Module):
 			#comb_att1 = self.W_comb_1(img_att1)
 			comb_att1 = img_att1
 
+		if self.use_global_img:
+			ques_emb_global_img_1 = self.W_qa_global_img_1(ques_feats)
+			global_img_ques_emb = self.tanh(self.W_global_img_ques_emb(global_img_feats))
+
+			global_img_emb_1 = self.W_global_ia_1(global_img_ques_emb)
+			h1_emb = self.W_p_global_img_1(self.tanh(global_img_emb_1 + ques_emb_global_img_1.unsqueeze(1))).squeeze(2)
+			
+			p1 = self.softmax(h1_emb)
+			
+			global_img_att1 = torch.bmm(p1.unsqueeze(1), global_img_ques_emb)
+			comb_att1 = comb_att1 + global_img_att1
+
 		u1 = ques_feats + comb_att1
 
 		# Stack 2
@@ -158,6 +189,16 @@ class SAN(nn.Module):
 		else:
 			#comb_att2 = self.W_comb_2(img_att2)
 			comb_att2 = img_att2
+
+		if self.use_global_img:
+			ques_emb_global_img_2 = self.W_qa_global_img_2(u1)
+			global_img_emb_2 = self.W_global_ia_2(global_img_ques_emb)
+			h2_emb = self.W_p_global_img_2(self.tanh(global_img_emb_2 + ques_emb_global_img_2.unsqueeze(1))).squeeze(2)
+			
+			p2 = self.softmax(h2_emb)
+			
+			global_img_att2 = torch.bmm(p2.unsqueeze(1), global_img_ques_emb)
+			comb_att2 = comb_att2 + global_img_att2
 
 		u2 = u1 + comb_att2
 
