@@ -182,4 +182,5 @@ def eval_model(models, dataset, params, extra_params):
 		accuracies.extend( output_preds ==  answers.detach().numpy())
 		print('Interim Val Accurracy: %.4f' % (np.mean(accuracies)))
 
-	print('Val Accurracy: %.4f' % (np.mean(accuracies)))        
+	with open(os.path.join(params['checkpoint_path'], '{}_acc.json'.format(params['split'])), 'w') as f:
+		print('Val Accurracy: %.4f' % (np.mean(accuracies)))        
