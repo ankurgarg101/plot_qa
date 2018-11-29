@@ -110,7 +110,7 @@ def get_extra_params(train_dataset):
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types
     extra_params['sfeat_ques'] = params['hidden_size']
 
-    if params['use_global_img']:
+    if not params['use_global_img']:
         extra_params['img_feat_size'] = None
 
     return extra_params

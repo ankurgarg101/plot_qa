@@ -146,13 +146,12 @@ class SAN(nn.Module):
 		if self.use_global_img:
 			ques_emb_global_img_1 = self.W_qa_global_img_1(ques_feats)
 			global_img_ques_emb = self.tanh(self.W_global_img_ques_emb(global_img_feats))
-
 			global_img_emb_1 = self.W_global_ia_1(global_img_ques_emb)
 			h1_emb = self.W_p_global_img_1(self.tanh(global_img_emb_1 + ques_emb_global_img_1.unsqueeze(1))).squeeze(2)
 			
 			p1 = self.softmax(h1_emb)
 			
-			global_img_att1 = torch.bmm(p1.unsqueeze(1), global_img_ques_emb)
+			global_img_att1 = torch.bmm(p1.unsqueeze(1), global_img_ques_emb).squeeze(1)
 			comb_att1 = comb_att1 + global_img_att1
 
 		u1 = ques_feats + comb_att1
@@ -197,7 +196,7 @@ class SAN(nn.Module):
 			
 			p2 = self.softmax(h2_emb)
 			
-			global_img_att2 = torch.bmm(p2.unsqueeze(1), global_img_ques_emb)
+			global_img_att2 = torch.bmm(p2.unsqueeze(1), global_img_ques_emb).squeeze(1)
 			comb_att2 = comb_att2 + global_img_att2
 
 		u2 = u1 + comb_att2

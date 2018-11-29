@@ -247,9 +247,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
 			
 			if params['use_roi'] or params['load_roi']:
-				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens, global_img_feats)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens, global_img_feats=global_img_feats)
 			else:
-				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens, global_img_feats)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens, global_img_feats=global_img_feats)
 
 			loss = criterion(output, answers)
 			
@@ -381,9 +381,9 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					img_emb = torch.cat((img_emb, bar_bboxes), dim=2)
 			
 			if params['use_roi'] or params['load_roi']:
-				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens, global_img_feats)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=bar_lens, text_feats=text_emb, num_texts=text_lens, global_img_feats=global_img_feats)
 			else:
-				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens, global_img_feats)
+				output = models['att_model'].forward(ques_emb, img_emb, num_boxes=None, text_feats=text_emb, num_texts=text_lens, global_img_feats=global_img_feats)
 
 			if (params['use_gpu'] and torch.cuda.is_available()):
 				answers = answers.cpu()
