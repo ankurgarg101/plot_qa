@@ -7,6 +7,7 @@ from models import build_models
 import json
 from trainer import train
 import os
+from evaluator import eval_model
 
 def fetch_args(parser):
 
@@ -128,14 +129,27 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     params = fetch_args(parser)
 
-    train_dataset = PlotDataset(params, 'train')
-    val_dataset = PlotDataset(params, 'val_easy')   
+    if params['split'] == 'train':
+        
+        train_dataset = PlotDataset(params, 'train')
+        val_dataset = PlotDataset(params, 'val_easy')   
 
-    extra_params = get_extra_params(train_dataset)
+        extra_params = get_extra_params(train_dataset)
 
-    save_json(params, params['checkpoint_path'], 'params.json')
-    save_json(extra_params, params['checkpoint_path'], 'extra_params.json')
+        save_json(params, params['checkpoint_path'], 'params.json')
+        save_json(extra_params, params['checkpoint_path'], 'extra_params.json')
 
-    models = build_models(params, extra_params)
+        models = build_models(params, extra_params)
     
-    train(models, train_dataset, val_dataset, params, extra_params)
+        train(models, train_dataset, val_dataset, params, extra_params)
+
+    else:
+
+        print(params['split'])
+        val_easy_dataset = PlotDataset(params, 'val')
+
+        extra_params = get_extra_params(val_easy_dataset)
+        
+        models = build_models(params, extra_params)
+        eval_model(models, val_easy_dataset, params, extra_params)
+
