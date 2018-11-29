@@ -104,6 +104,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-
+*.hdf5
 **/gen/
 **/train_model/
