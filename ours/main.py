@@ -74,7 +74,7 @@ def fetch_args(parser):
     parser.add_argument('--use_pos', dest = 'use_pos', default=False, action = 'store_true', help = 'Use positional features from bboxes for text and bars')
     parser.add_argument('--load_roi', dest = 'load_roi', default=False, action = 'store_true', help = 'Load and use precomputed positional features from bboxes for text and bars')
     parser.add_argument('--use_global_img', default=False, action='store_true', help="Use global Image features as well")
-
+    parser.add_argument('--n_heads', default=1, type=int, help='Number of attention heads')
     args = parser.parse_args()
     params = vars(args)                     # convert to ordinary dict
     

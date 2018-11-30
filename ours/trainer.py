@@ -145,7 +145,6 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 		#if epoch > 0:
 		#	params['load_roi'] = True
 		#print(train_loader.params['load_roi'])
-		#print(params['load_roi'])
 		for i, batch in enumerate(train_loader):
 			
 			images = batch['image']
@@ -197,8 +196,7 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 				ids = ids
 				if params['load_roi']:
 					roi_feats = roi_feats.cuda()
-			if params['load_roi']:	
-				print(roi_feats.size())
+					
 			optimizer.zero_grad()
 			
 			ques_emb = models['ques_model'].forward(questions, ques_lens)
