@@ -58,6 +58,13 @@ def eval_model(models, dataset, params, extra_params):
 		roi_save_file = h5py.File(params['roi_save_file'])
 
 	accuracies = []
+	category_accuracies = {}
+
+	for ct_id in range(3):
+		category_accuracies[ct_id] = {}
+		category_accuracies[ct_id]['correct'] = 0
+		category_accuracies[ct_id]['total'] = 0
+
 	# Call train() on all models for training
 	for m in models:
 		models[m].eval()
@@ -81,6 +88,7 @@ def eval_model(models, dataset, params, extra_params):
 		text_vals = batch['text_vals']
 		text_types = batch['text_types']
 		ids = batch['id']
+		template_ids = batch['template_id']
 		if params['load_roi']:
 			roi_feats = batch['roi_feats']
 
@@ -98,6 +106,8 @@ def eval_model(models, dataset, params, extra_params):
 		text_vals = text_vals[sort_idxes]
 		text_types = text_types[sort_idxes]
 		ids = [ids[i] for i in sort_idxes]
+		template_ids = template_ids[sort_idxes]
+
 		if params['load_roi']:
 			roi_feats = roi_feats[sort_idxes]
 		
@@ -179,8 +189,20 @@ def eval_model(models, dataset, params, extra_params):
 			answers = answers.cpu()
 
 		output_preds = pred(output)
-		accuracies.extend( output_preds ==  answers.detach().numpy())
+		check = output_preds ==  answers.detach().numpy()
+
+		for i, ch in enumerate(check):
+
+			if ch:
+				category_accuracies[template_ids[i].item()]['correct'] += 1
+			category_accuracies[template_ids[i].item()]['total'] += 1
+
+		accuracies.extend( check )
 		print('Interim Val Accurracy: %.4f' % (np.mean(accuracies)))
+		#print(category_accuracies)	
 
 	with open(os.path.join(params['checkpoint_path'], '{}_acc.json'.format(params['split'])), 'w') as f:
-		print('Val Accurracy: %.4f' % (np.mean(accuracies)))        
+		print('Val Accurracy: %.4f' % (np.mean(accuracies)), file=f)
+
+	with open(os.path.join(params['checkpoint_path'], '{}_cat_acc.json'.format(params['split'])), 'w') as f:
+		json.dump(category_accuracies, f)

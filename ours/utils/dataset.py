@@ -66,12 +66,14 @@ class PlotDataset(Dataset):
 			end_idx = int(0.99*len(qa_data))
 			num_ex = int(params['pct']*len(qa_data)/100)
 		else:
+			end_idx = len(qa_data)
 			if self.split == 'train':
 				start_idx = int(0.998*len(qa_data))
+				num_ex = end_idx - start_idx
 			else:
-				start_idx = 0
-			end_idx = len(qa_data)
-			num_ex = end_idx - start_idx
+				start_idx = 0	
+				num_ex = int(params['pct']*len(qa_data)/100)
+
 			print('Holdout set len: {}'.format(num_ex))
 
 		if params['random']:
@@ -434,6 +436,15 @@ class PlotDataset(Dataset):
 
 		bar_bboxes, text_bboxes, text_vals, text_types, bar_len, txt_len = self.get_bbox_data(self.metadata_dict[image_name])
 
+		qa_template_id = None
+		template_id = self.qa_dict[question_id]['template_id']
+		if template_id == 'structure':
+			qa_template_id = 0
+		elif template_id == 'data':
+			qa_template_id = 1
+		else:
+			qa_template_id = 2
+
 		
 		return {
 			'image': img,
@@ -447,5 +458,6 @@ class PlotDataset(Dataset):
 			'text_vals': torch.as_tensor(text_vals, dtype=torch.long),
 			'text_types': torch.as_tensor(text_types, dtype=torch.float),
 			'id' : image_name,
-			'roi_feats' : roi_feats
+			'roi_feats' : roi_feats,
+			'template_id': qa_template_id
 		}
