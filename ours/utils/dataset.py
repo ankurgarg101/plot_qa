@@ -412,7 +412,7 @@ class PlotDataset(Dataset):
 		"""
 		Return the item according to the index
 		"""
-		
+		print(self.params)	
 		# Get the question Id to process
 		question_id = self.idx2qid[idx]
 		
