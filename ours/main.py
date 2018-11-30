@@ -7,6 +7,7 @@ from models import build_models
 import json
 from trainer import train
 import os
+from evaluator import eval_model
 
 def fetch_args(parser):
 
@@ -72,6 +73,8 @@ def fetch_args(parser):
     parser.add_argument('--use_roi', dest = 'use_roi', default=False, action = 'store_true', help = 'Use ROI features for the bbox regions')
     parser.add_argument('--use_pos', dest = 'use_pos', default=False, action = 'store_true', help = 'Use positional features from bboxes for text and bars')
     parser.add_argument('--load_roi', dest = 'load_roi', default=False, action = 'store_true', help = 'Load and use precomputed positional features from bboxes for text and bars')
+    parser.add_argument('--use_global_img', default=False, action='store_true', help="Use global Image features as well")
+
     args = parser.parse_args()
     params = vars(args)                     # convert to ordinary dict
     
@@ -94,14 +97,22 @@ def get_extra_params(train_dataset):
 
     if params['feature_type'] == 'VGG16':
         extra_params['sfeat_img'] = 512
+        # For using global image features as well in the model
+        extra_params['img_feat_size'] = 512
     else:
         extra_params['sfeat_img'] = 2048
+        # For using global image features as well in the model
+        extra_params['img_feat_size'] = 2048
+
     if params['use_pos']:
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types + 4
         extra_params['sfeat_img'] += 4
     else:
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types
     extra_params['sfeat_ques'] = params['hidden_size']
+
+    if not params['use_global_img']:
+        extra_params['img_feat_size'] = None
 
     return extra_params
 
@@ -118,14 +129,27 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     params = fetch_args(parser)
 
-    train_dataset = PlotDataset(params, 'train')
-    val_dataset = PlotDataset(params, 'val_easy')   
+    if params['split'] == 'train':
+        
+        train_dataset = PlotDataset(params, 'train')
+        val_dataset = PlotDataset(params, 'val_easy')   
 
-    extra_params = get_extra_params(train_dataset)
+        extra_params = get_extra_params(train_dataset)
 
-    save_json(params, params['checkpoint_path'], 'params.json')
-    save_json(extra_params, params['checkpoint_path'], 'extra_params.json')
+        save_json(params, params['checkpoint_path'], 'params.json')
+        save_json(extra_params, params['checkpoint_path'], 'extra_params.json')
 
-    models = build_models(params, extra_params)
+        models = build_models(params, extra_params)
     
-    train(models, train_dataset, val_dataset, params, extra_params)
+        train(models, train_dataset, val_dataset, params, extra_params)
+
+    else:
+
+        print(params['split'])
+        val_easy_dataset = PlotDataset(params, 'val')
+
+        extra_params = get_extra_params(val_easy_dataset)
+        
+        models = build_models(params, extra_params)
+        eval_model(models, val_easy_dataset, params, extra_params)
+

@@ -66,7 +66,10 @@ class PlotDataset(Dataset):
 			end_idx = int(0.99*len(qa_data))
 			num_ex = int(params['pct']*len(qa_data)/100)
 		else:
-			start_idx = int(0.998*len(qa_data))
+			if self.split == 'train':
+				start_idx = int(0.998*len(qa_data))
+			else:
+				start_idx = 0
 			end_idx = len(qa_data)
 			num_ex = end_idx - start_idx
 			print('Holdout set len: {}'.format(num_ex))
