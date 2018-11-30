@@ -17,9 +17,9 @@ def build_models(params, extra_params):
 	question_model = QuestionEmbedding(extra_params['ques_vocab_size'], params['emb_size'], params['hidden_size'], params['rnn_size'], params['rnn_layers'], params['dropout'], extra_params['max_ques_seq_len'], params['use_gpu'])
 
 	if params['use_text']:
-		attention_model = SAN(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], extra_params['sfeat_text'], img_feat_size=extra_params['img_feat_size'])
+		attention_model = SAN(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], extra_params['sfeat_text'], img_feat_size=extra_params['img_feat_size'], n_heads = params['n_heads'])
 	else:
-		attention_model = SAN(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], img_feat_size=extra_params['img_feat_size'])
+		attention_model = SAN(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], img_feat_size=extra_params['img_feat_size'],n_heads = params['n_heads'])
 
 	models['ques_model'] = question_model
 	models['att_model'] = attention_model
