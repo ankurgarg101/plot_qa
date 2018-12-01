@@ -142,8 +142,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 		running_loss = 0.0
 		
-		#if epoch > 0:
-		#	params['load_roi'] = True
+		if epoch > 0:
+			params['load_roi'] = True
 		#print(train_loader.params['load_roi'])
 		for i, batch in enumerate(train_loader):
 			
