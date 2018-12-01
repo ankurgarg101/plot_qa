@@ -66,12 +66,14 @@ class PlotDataset(Dataset):
 			end_idx = int(0.99*len(qa_data))
 			num_ex = int(params['pct']*len(qa_data)/100)
 		else:
+			end_idx = len(qa_data)
 			if self.split == 'train':
 				start_idx = int(0.998*len(qa_data))
+				num_ex = end_idx - start_idx
 			else:
-				start_idx = 0
-			end_idx = len(qa_data)
-			num_ex = end_idx - start_idx
+				start_idx = 0	
+				num_ex = int(params['pct']*len(qa_data)/100)
+
 			print('Holdout set len: {}'.format(num_ex))
 
 		if params['random']:
@@ -361,11 +363,11 @@ class PlotDataset(Dataset):
 		# First fill the bar_bboxes
 		for br in metadata['bars']['bboxes']:
 			for box in br:
-				center_x, center_y, w, h = box[0], box[1], box[2], box[3]
-				x1 = (center_x - w/2) #/ (self.org_w - 1)
-				x2 = (center_x + w/2) #/ (self.org_w - 1)
-				y1 = (center_y - h/2) #/ (self.org_h - 1)
-				y2 = (center_y + h/2) #/ (self.org_h - 1)
+				x_min, y_min, w, h = box[0], box[1], box[2], box[3]
+				x1 = x_min
+				x2 = x_min + w
+				y1 = y_min
+				y2 = y_min + h
 
 				bar_bboxes[bidx][0] = x1 / self.scale_ratio
 				bar_bboxes[bidx][1] = y1 / self.scale_ratio
@@ -384,11 +386,11 @@ class PlotDataset(Dataset):
 
 			box = txt['bbox']
 
-			center_x, center_y, w, h = box[0], box[1], box[2], box[3]
-			x1 = (center_x - w/2) #/ (self.org_w - 1)
-			x2 = (center_x + w/2) #/ (self.org_w - 1)
-			y1 = (center_y - h/2) #/ (self.org_h - 1)
-			y2 = (center_y + h/2) #/ (self.org_h - 1)
+			x_min, y_min, w, h = box[0], box[1], box[2], box[3]
+			x1 = x_min
+			x2 = x_min + w
+			y1 = y_min
+			y2 = y_min + h
 
 			text_bboxes[tidx][0] = x1 / self.scale_ratio
 			text_bboxes[tidx][1] = y1 / self.scale_ratio
@@ -410,7 +412,7 @@ class PlotDataset(Dataset):
 		"""
 		Return the item according to the index
 		"""
-		
+		#print(self.params)	
 		# Get the question Id to process
 		question_id = self.idx2qid[idx]
 		
@@ -434,6 +436,15 @@ class PlotDataset(Dataset):
 
 		bar_bboxes, text_bboxes, text_vals, text_types, bar_len, txt_len = self.get_bbox_data(self.metadata_dict[image_name])
 
+		qa_template_id = None
+		template_id = self.qa_dict[question_id]['template_id']
+		if template_id == 'structure':
+			qa_template_id = 0
+		elif template_id == 'data':
+			qa_template_id = 1
+		else:
+			qa_template_id = 2
+
 		
 		return {
 			'image': img,
@@ -447,5 +458,6 @@ class PlotDataset(Dataset):
 			'text_vals': torch.as_tensor(text_vals, dtype=torch.long),
 			'text_types': torch.as_tensor(text_types, dtype=torch.float),
 			'id' : image_name,
-			'roi_feats' : roi_feats
+			'roi_feats' : roi_feats,
+			'template_id': qa_template_id
 		}

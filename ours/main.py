@@ -81,7 +81,8 @@ def fetch_args(parser):
     parser.add_argument('--vis_idx', dest = 'vis_idx', default=0, type=int, help = 'Index of question to visualize')
     parser.add_argument('--vis_dir', dest = 'vis_dir', default='vis/', help = 'Directory to place visualizations')
 
-
+    # N Heads
+    parser.add_argument('--n_heads', default=1, type=int, help='Number of attention heads')
     args = parser.parse_args()
     params = vars(args)                     # convert to ordinary dict
     
@@ -113,7 +114,9 @@ def get_extra_params(train_dataset):
 
     if params['use_pos']:
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types + 4
-        extra_params['sfeat_img'] += 4
+        
+        if params['use_roi']:
+            extra_params['sfeat_img'] += 4
     else:
         extra_params['sfeat_text'] = params['emb_size'] + train_dataset.n_text_types
     extra_params['sfeat_ques'] = params['hidden_size']
