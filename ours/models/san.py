@@ -121,6 +121,7 @@ class SAN(nn.Module):
 			h1_emb.data.masked_fill_(inv_img_mask, -float("inf"))
 		
 		p1 = self.softmax(h1_emb)
+		self.attn_1_img_emb = p1
 
 		# Weighted sum
 		img_att1 = torch.bmm(p1.unsqueeze(1), img_ques_emb).squeeze(1)
@@ -135,6 +136,7 @@ class SAN(nn.Module):
 			h1_emb.data.masked_fill_(inv_text_mask, -float("inf"))
 
 			p1 = self.softmax(h1_emb)
+			self.attn_1_text = p1
 			# p1 = p1_w * text_mask
 			text_att1 = torch.bmm(p1.unsqueeze(1), text_ques_emb).squeeze(1)
 			#comb_att1 = self.W_comb_1(torch.cat((img_att1,text_att1),dim=1))
@@ -150,6 +152,7 @@ class SAN(nn.Module):
 			h1_emb = self.W_p_global_img_1(self.tanh(global_img_emb_1 + ques_emb_global_img_1.unsqueeze(1))).squeeze(2)
 			
 			p1 = self.softmax(h1_emb)
+			self.attn_1_global_img = p1
 			
 			global_img_att1 = torch.bmm(p1.unsqueeze(1), global_img_ques_emb).squeeze(1)
 			comb_att1 = comb_att1 + global_img_att1
@@ -168,7 +171,7 @@ class SAN(nn.Module):
 			h2_emb.data.masked_fill_(inv_img_mask, -float("inf"))
 
 		p2 = self.softmax(h2_emb)
-
+		self.attn_2_img_emb = p2
 		# Weighted sum
 		img_att2 = torch.bmm(p2.unsqueeze(1), img_ques_emb).squeeze(1)
 
@@ -181,6 +184,7 @@ class SAN(nn.Module):
 			h2_emb.data.masked_fill_(inv_text_mask, -float("inf"))
 
 			p2 = self.softmax(h2_emb)
+			self.attn_2_text = p2
 			# p2 = p2_w * text_mask
 			text_att2 = torch.bmm(p2.unsqueeze(1), text_ques_emb).squeeze(1)
 			#comb_att2 = self.W_comb_1(torch.cat((img_att2,text_att2),dim=1))
@@ -195,6 +199,7 @@ class SAN(nn.Module):
 			h2_emb = self.W_p_global_img_2(self.tanh(global_img_emb_2 + ques_emb_global_img_2.unsqueeze(1))).squeeze(2)
 			
 			p2 = self.softmax(h2_emb)
+			self.attn_2_global_img = p2
 			
 			global_img_att2 = torch.bmm(p2.unsqueeze(1), global_img_ques_emb).squeeze(1)
 			comb_att2 = comb_att2 + global_img_att2

@@ -218,7 +218,7 @@ class SAN_MULTI(nn.Module):
 			
 			p2 = self.softmax(h2_emb)
 			
-			global_img_att2 = torch.bmm(p2.unsqueeze(1), global_img_ques_emb).view(batch_size,-1)
+			global_img_att2 = torch.bmm(p2, global_img_ques_emb).view(batch_size,-1)
 			global_img_att2 = self.tanh(self.global_comb(global_img_att2))
 			comb_att2 = torch.cat((global_img_att2,comb_att2),dim=1)
 
