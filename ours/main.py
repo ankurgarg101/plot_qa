@@ -8,6 +8,7 @@ import json
 from trainer import train
 import os
 from evaluator import eval_model
+from visualize import visualize_model
 
 def fetch_args(parser):
 
@@ -75,6 +76,12 @@ def fetch_args(parser):
     parser.add_argument('--load_roi', dest = 'load_roi', default=False, action = 'store_true', help = 'Load and use precomputed positional features from bboxes for text and bars')
     parser.add_argument('--use_global_img', default=False, action='store_true', help="Use global Image features as well")
 
+    # visualization
+    parser.add_argument('--vis', dest = 'vis', default=False, action = 'store_true', help = 'Visualize attention weights')
+    parser.add_argument('--vis_idx', dest = 'vis_idx', default=0, type=int, help = 'Index of question to visualize')
+    parser.add_argument('--vis_dir', dest = 'vis_dir', default='vis/', help = 'Directory to place visualizations')
+
+
     args = parser.parse_args()
     params = vars(args)                     # convert to ordinary dict
     
@@ -128,6 +135,17 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     params = fetch_args(parser)
+
+    if params['vis']:
+        params['split'] = 'val_easy'
+        dataset = PlotDataset(params, 'val_easy')
+        
+        extra_params = get_extra_params(dataset)
+
+        models = build_models(params, extra_params)
+        visualize_model(models, dataset, params, extra_params, int(params['vis_idx']))
+
+        exit() # Abrupt exit
 
     if params['split'] == 'train':
         
