@@ -47,6 +47,7 @@ def visualize_global_img_attn(params, attn_img_emb, rgb_image, out_img_name, alp
 
 def visualize_text_attn(dataset, idx, params, attn_text, rgb_image, out_img_name, alpha = 0.5):
     attention_image = np.zeros((448, 448))
+    count = np.zeros((448, 448))
     # print (attn_text)
     qid = dataset.idx2qid[idx]
     qas = dataset.qa_dict[qid]
@@ -66,7 +67,11 @@ def visualize_text_attn(dataset, idx, params, attn_text, rgb_image, out_img_name
             iy = int(y)
             iw = int(w)
             ih = int(h)
-            attention_image[iy: iy+ih+1, ix: ix+iw+1] = attn_text[0, i]
+            attention_image[iy: iy+ih+1, ix: ix+iw+1] += attn_text[0, i]
+            count[iy: iy+ih+1, ix: ix+iw+1] += 1
+
+    count = np.maximum(1, count)
+    attention_image = np.divide(attention_image, count)
 
     attention_image = attention_image.reshape(448, 448, 1)
     final_attention_image = alpha*rgb_image + (1-alpha)*attention_image
@@ -76,6 +81,7 @@ def visualize_text_attn(dataset, idx, params, attn_text, rgb_image, out_img_name
 
 def visualize_roi_attn(dataset, idx, params, attn_roi, rgb_image, out_img_name, alpha = 0.5):
     attention_image = np.zeros((448, 448))
+    count = np.zeros((448, 448))
     print (attn_roi)
     qid = dataset.idx2qid[idx]
     qas = dataset.qa_dict[qid]
@@ -83,19 +89,23 @@ def visualize_roi_attn(dataset, idx, params, attn_roi, rgb_image, out_img_name, 
     mt = dataset.metadata_dict[qas['image']]
     print (mt)
     EPS = 1e-20
-    ids2texts = {}
-    for t in mt['texts']:
-        ids2texts[t['idx']] = t
 
-    for i in range(30):
-        if abs(attn_roi[0, i]) > EPS:
-            bbox = ids2texts[i]['bbox']
-            x, y, w, h = bbox
-            ix = int(x)
-            iy = int(y)
-            iw = int(w)
-            ih = int(h)
-            attention_image[iy: iy+ih+1, ix: ix+iw+1] = attn_roi[0, i]
+    bidx = 0
+    for br in mt['bars']['bboxes']:
+        for box in br:
+            if bidx < 30 and (abs(attn_roi[0, bidx]) > EPS):
+                x, y, w, h = box
+                ix = int(x)
+                iy = int(y)
+                iw = int(w)
+                ih = int(h)
+                attention_image[iy: iy+ih+1, ix: ix+iw+1] += attn_roi[0, bidx]
+                count[iy: iy+ih+1, ix: ix+iw+1] += 1
+
+            bidx += 1
+
+    count = np.maximum(1, count)
+    attention_image = np.divide(attention_image, count)
 
     attention_image = attention_image.reshape(448, 448, 1)
     final_attention_image = alpha*rgb_image + (1-alpha)*attention_image
@@ -232,7 +242,9 @@ def visualize_model(models, dataset, params, extra_params, idx):
                     box_idx = box_idx.cuda()
 
                 img_emb = models['roi_model'].forward(img_emb, bar_bboxes, box_idx )
-
+                
+                # Jugaad
+                img_emb = img_emb.unsqueeze(0)
                 
                 if params['roi_save_file']:
                     for b in range(len(ids)):
@@ -249,7 +261,7 @@ def visualize_model(models, dataset, params, extra_params, idx):
             text_emb = torch.cat((text_emb, text_types), dim=2)
         else:
             text_emb = None
-
+        
         if params['use_pos']:
 
             if params['use_text']:
