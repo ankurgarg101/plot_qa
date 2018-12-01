@@ -420,6 +420,20 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 		loss_store += [[epoch, running_loss]]
 		print('Epoch %d | Loss: %.4f | lr: %f'%(epoch, running_loss, lr_cur))
 
+		if ((epoch+1) % 10 == 0) and epoch > 0:
+
+			torch.save(models['ques_model'].state_dict(), os.path.join(model_dir, 'question_model{}.pkl'.format(epoch)))
+			torch.save(models['att_model'].state_dict(), os.path.join(model_dir, 'attention_model{}.pkl'.format(epoch)))
+
+			if not params['load_roi']:
+				torch.save(models['img_model'].state_dict(), os.path.join(model_dir, 'image_model{}.pkl'.format(epoch)))
+				if params['use_roi']:
+					torch.save(models['roi_model'].state_dict(), os.path.join(model_dir, 'roi_model{}.pkl'.format(epoch)))
+		
+			if params['use_text']:
+				torch.save(models['text_model'].state_dict(), os.path.join(model_dir, 'text_model{}.pkl'.format(epoch)))
+
+
 		# torch.save(question_model.state_dict(), 'question_model'+str(epoch)+'.pkl')
 		print("Saving all losses to file")
 		np.savetxt(os.path.join(params['checkpoint_path'], 'all_loss_store.txt'), np.array(all_loss_store), fmt='%f')
