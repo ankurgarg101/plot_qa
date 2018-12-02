@@ -198,7 +198,6 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 					roi_feats = roi_feats.cuda()
 					
 			optimizer.zero_grad()
-			
 			ques_emb = models['ques_model'].forward(questions, ques_lens)
 			
 			global_img_feats = None
@@ -207,8 +206,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 				if params['use_global_img']:
 					assert 'img_model' in models
-					img_emb = models['img_model'].forward(images)
-					global_img_feats = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
+					img_emb_global = models['img_model'].forward(images)
+					global_img_feats = img_emb_global.view(img_emb_global.size(0), img_emb_global.size(1), -1).permute(0, 2, 1)
 
 			else:
 				img_emb = models['img_model'].forward(images)
@@ -341,8 +340,8 @@ def train(models, train_dataset, val_dataset, params, extra_params):
 
 				if params['use_global_img']:
 					assert 'img_model' in models
-					img_emb = models['img_model'].forward(images)
-					global_img_feats = img_emb.view(img_emb.size(0), img_emb.size(1), -1).permute(0, 2, 1)
+					img_emb_global = models['img_model'].forward(images)
+					global_img_feats = img_emb_global.view(img_emb_global.size(0), img_emb_global.size(1), -1).permute(0, 2, 1)
 
 			else:
 				img_emb = models['img_model'].forward(images)

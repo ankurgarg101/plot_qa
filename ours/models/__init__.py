@@ -19,12 +19,12 @@ def build_models(params, extra_params):
 
 	if params['use_text']:
 		if params['n_heads'] > 1:
-			attention_model = SAN_MULTI(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], extra_params['sfeat_text'], img_feat_size=extra_params['img_feat_size'], n_heads = params['n_heads'])
+			attention_model = SAN_MULTI(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], extra_params['sfeat_text'], img_feat_size=extra_params['img_feat_size'], n_heads = params['n_heads'], dot_product_att = params['dot_product_att'])
 		else:
 			attention_model = SAN(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], extra_params['sfeat_text'], img_feat_size=extra_params['img_feat_size'], n_heads = params['n_heads'])
 	else:
 		if params['n_heads'] > 1:
-			attention_model = SAN_MULTI(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], img_feat_size=extra_params['img_feat_size'],n_heads = params['n_heads'])
+			attention_model = SAN_MULTI(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], img_feat_size=extra_params['img_feat_size'],n_heads = params['n_heads'], dot_product_att = params['dot_product_att'])
 		else:	
 			attention_model = SAN(extra_params['sfeat_img'], extra_params['sfeat_ques'], params['att_size'], extra_params['ans_vocab_size'], params['use_gpu'], img_feat_size=extra_params['img_feat_size'],n_heads = params['n_heads'])
 
