@@ -100,12 +100,18 @@ class PlotDataset(Dataset):
 		self.idx2qid = {}
 		self.qa_dict = {}
 
+		tp_cnt = {
+			'structure': 0,
+			'data': 0,
+			'reasoning': 0
+		}
 		idx = 0
 		for qas in qa_data:
 			self.idx2qid[idx] = qas['question_id']
 			self.qid2idx[qas['question_id']] = idx
 			self.qa_dict[qas['question_id']] = qas
 			self.metadata_dict[qas['image']] = {}
+			tp_cnt[qas['template_id']] += 1
 			idx += 1
 
 		for mt in metadata:
@@ -136,8 +142,9 @@ class PlotDataset(Dataset):
 		if params['debug']:
 			print('Read {} Question-Answer Pairs'.format(len(self.idx2qid)))
 			print('Max Ques Len: {}'.format(self.max_ques_len))
-			print('Images', list(self.metadata_dict.keys()))
+			print('Images', len(self.metadata_dict.keys()))
 
+		print(tp_cnt)
 		
 	def index_questions(self):
 
