@@ -39,61 +39,55 @@ class SAN_MULTI(nn.Module):
 		self.tanh = nn.Tanh()
 		self.softmax = nn.Softmax(dim=-1)
 
-		self.all_comb_size = input_img_size + input_ques_size
+		self.all_comb_size = 2
 		# Stack 1 layers
 		self.W_qa_img_1 = nn.Linear(input_ques_size, self.n_heads*att_size)
-		#self.W_img_ques_emb = nn.Linear(input_img_size, input_ques_size)
-		#self.W_ia_1 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
-		self.W_ia_1 = nn.Linear(input_img_size, self.n_heads*att_size, bias=False)
+		self.W_img_ques_emb = nn.Linear(input_img_size, input_ques_size)
+		self.W_ia_1 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
 		if not dot_product_att:
 			self.W_p_img_1 = nn.Linear(att_size, 1)
 		
 		if self.use_global_img:
 			self.W_qa_global_img_1 = nn.Linear(input_ques_size, self.n_heads*att_size)
-			#self.W_global_img_ques_emb = nn.Linear(img_feat_size, input_ques_size)
-			#self.W_global_ia_1 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
-			self.W_global_ia_1 = nn.Linear(img_feat_size, self.n_heads*att_size, bias=False)
+			self.W_global_img_ques_emb = nn.Linear(img_feat_size, input_ques_size)
+			self.W_global_ia_1 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
 			if not dot_product_att:
 				self.W_p_global_img_1 = nn.Linear(att_size, 1)
 
-			self.all_comb_size +=  img_feat_size
+			self.all_comb_size +=  1
 
 		if self.input_text_size is not None:
 			self.W_qa_text_1 = nn.Linear(input_ques_size, self.n_heads*att_size)
-			#self.W_txt_ques_emb = nn.Linear(input_text_size, input_ques_size)
-			#self.W_ta_1 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
-			self.W_ta_1 = nn.Linear(input_text_size, self.n_heads*att_size, bias=False)
+			self.W_txt_ques_emb = nn.Linear(input_text_size, input_ques_size)
+			self.W_ta_1 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
 			if not dot_product_att:
 				self.W_p_text_1 = nn.Linear(att_size, 1)
 
-			self.all_comb_size += input_text_size
+			self.all_comb_size += 1
 			
 		# Stack 2 layers
 		self.W_qa_img_2 = nn.Linear(input_ques_size, self.n_heads*att_size)
-		#self.W_ia_2 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
-		self.W_ia_2 = nn.Linear(input_img_size, self.n_heads*att_size, bias=False)
+		self.W_ia_2 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
 		if not dot_product_att:
 			self.W_p_img_2 = nn.Linear(att_size, 1)
 
 		if self.use_global_img:
 			self.W_qa_global_img_2 = nn.Linear(input_ques_size, self.n_heads*att_size)
-			#self.W_global_ia_2 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
-			self.W_global_ia_2 = nn.Linear(img_feat_size, self.n_heads*att_size, bias=False)
+			self.W_global_ia_2 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
 			if not dot_product_att:
 				self.W_p_global_img_2 = nn.Linear(att_size, 1)
 
 		if self.input_text_size is not None:
 			self.W_qa_text_2 = nn.Linear(input_ques_size, self.n_heads*att_size)
-			#self.W_ta_2 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
-			self.W_ta_2 = nn.Linear(input_text_size, self.n_heads*att_size, bias=False)
+			self.W_ta_2 = nn.Linear(input_ques_size, self.n_heads*att_size, bias=False)
 			if not dot_product_att:
 				self.W_p_text_2 = nn.Linear(att_size, 1)
 			
-		self.img_comb = nn.Linear(self.n_heads*input_img_size, input_img_size)
-		self.txt_comb = nn.Linear(self.n_heads*input_text_size, input_text_size)
-		self.global_comb = nn.Linear(self.n_heads*img_feat_size, img_feat_size)
+		self.img_comb = nn.Linear(self.n_heads*input_ques_size, input_ques_size)
+		self.txt_comb = nn.Linear(self.n_heads*input_ques_size, input_ques_size)
+		self.global_comb = nn.Linear(self.n_heads*input_ques_size, input_ques_size)
 
-		self.all_comb = nn.Linear(self.all_comb_size,input_ques_size)
+		#self.all_comb = nn.Linear(self.all_comb_size,input_ques_size)
 		# Final fc layer
 		self.W_u = nn.Linear(input_ques_size, output_size)
 
@@ -130,7 +124,7 @@ class SAN_MULTI(nn.Module):
 
 		# Stack 1
 		ques_emb_img_1 = self.W_qa_img_1(ques_feats).view(batch_size,1,self.n_heads,self.att_size).repeat(1,img_feats.size(1),1,1).view(-1,self.att_size)
-		img_ques_emb = img_feats#self.tanh(self.W_img_ques_emb(img_feats)) #computed only once
+		img_ques_emb = self.tanh(self.W_img_ques_emb(img_feats)) #computed only once
 		img_emb_1 = self.W_ia_1(img_ques_emb).view(batch_size,img_ques_emb.size(1),self.n_heads,self.att_size).view(-1,self.att_size)
 
 		if self.dot_product_att:
@@ -147,11 +141,11 @@ class SAN_MULTI(nn.Module):
 		p1 = p1.view(batch_size,self.n_heads,-1)
 		img_att1 = torch.bmm(p1, img_ques_emb).view(batch_size,-1)
 		img_att1 = self.tanh(self.img_comb(img_att1))
-		#comb_att1 = ques_feats + img_att1
-		comb_att1 = torch.cat((img_att1,ques_feats),dim=1)
+		comb_att1 = ques_feats + img_att1
+		#comb_att1 = torch.cat((img_att1,ques_feats),dim=1)
 		if self.use_text:
 			ques_emb_text_1 = self.W_qa_text_1(ques_feats).view(batch_size,1,self.n_heads,self.att_size).repeat(1,text_feats.size(1),1,1).view(-1,self.att_size)
-			text_ques_emb = text_feats#self.tanh(self.W_txt_ques_emb(text_feats)) 
+			text_ques_emb = self.tanh(self.W_txt_ques_emb(text_feats)) 
 			text_emb_1 = self.W_ta_1(text_ques_emb).view(batch_size,text_ques_emb.size(1),self.n_heads,self.att_size).view(-1,self.att_size)
 			
 			if self.dot_product_att:
@@ -167,12 +161,12 @@ class SAN_MULTI(nn.Module):
 			text_att1 = torch.bmm(p1, text_ques_emb).view(batch_size,-1)
 			text_att1 = self.tanh(self.txt_comb(text_att1))
 
-			#comb_att1 += text_att1
-			comb_att1 = torch.cat((text_att1,comb_att1),dim=1)
+			comb_att1 += text_att1
+			#comb_att1 = torch.cat((img_att1,comb_att1),dim=1)
 
 		if self.use_global_img:
 			ques_emb_global_img_1 = self.W_qa_global_img_1(ques_feats).view(batch_size,1,self.n_heads,self.att_size).repeat(1,global_img_feats.size(1),1,1).view(-1,self.att_size)
-			global_img_ques_emb = global_img_feats#self.tanh(self.W_global_img_ques_emb(global_img_feats))
+			global_img_ques_emb = self.tanh(self.W_global_img_ques_emb(global_img_feats))
 			global_img_emb_1 = self.W_global_ia_1(global_img_ques_emb).view(-1,self.att_size)
 
 			if self.dot_product_att:
@@ -187,11 +181,10 @@ class SAN_MULTI(nn.Module):
 			global_img_att1 = torch.bmm(p1, global_img_ques_emb).view(batch_size,-1)
 			global_img_att1 = self.tanh(self.global_comb(global_img_att1))
 			
-			#comb_att1 += global_img_att1
-			comb_att1 = torch.cat((global_img_att1,comb_att1),dim=1)
+			comb_att1 += global_img_att1
+			#comb_att1 = torch.cat((global_img_att1,comb_att1),dim=1)
 
 		u1 = comb_att1
-		u1 = self.tanh(self.all_comb(u1))
 		#u1 = ques_feats + comb_att1
 
 		# Stack 2
@@ -214,8 +207,8 @@ class SAN_MULTI(nn.Module):
 		img_att2 = torch.bmm(p2, img_ques_emb).view(batch_size,-1)
 		img_att2 = self.tanh(self.img_comb(img_att2))
 		
-		#comb_att2 = u1 + img_att2
-		comb_att2 = torch.cat((img_att2,u1),dim=1)
+		comb_att2 = u1 + img_att2
+		#comb_att2 = torch.cat((img_att2,u1),dim=1)
 
 		if self.use_text:
 			ques_emb_text_2 = self.W_qa_text_2(u1).view(batch_size,1,self.n_heads,self.att_size).repeat(1,text_feats.size(1),1,1).view(-1,self.att_size)
@@ -234,8 +227,8 @@ class SAN_MULTI(nn.Module):
 			text_att2 = torch.bmm(p2, text_ques_emb).view(batch_size,-1)
 			text_att2 = self.tanh(self.txt_comb(text_att2))
 
-			#comb_att2 += text_att2
-			comb_att2 = torch.cat((text_att2,comb_att2),dim=1)
+			comb_att2 += text_att2
+			#comb_att2 = torch.cat((text_att2,comb_att2),dim=1)
 
 		if self.use_global_img:
 			ques_emb_global_img_2 = self.W_qa_global_img_2(u1).view(batch_size,1,self.n_heads,self.att_size).repeat(1,global_img_feats.size(1),1,1).view(-1,self.att_size)
@@ -251,11 +244,11 @@ class SAN_MULTI(nn.Module):
 			global_img_att2 = torch.bmm(p2, global_img_ques_emb).view(batch_size,-1)
 			global_img_att2 = self.tanh(self.global_comb(global_img_att2))
 			
-			#comb_att2 += global_img_att2
-			comb_att2 = torch.cat((global_img_att2,comb_att2),dim=1)
+			comb_att2 += global_img_att2
+			#comb_att2 = torch.cat((global_img_att2,comb_att2),dim=1)
 
 		u2 = comb_att2
-		u2 = self.tanh(self.all_comb(comb_att2))
+		#u2 = self.tanh(self.all_comb(comb_att2))
 
 		# Final softmax outputs
 		scores = self.W_u(u2)
