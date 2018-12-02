@@ -452,6 +452,7 @@ class PlotDataset(Dataset):
 		else:
 			qa_template_id = 2
 
+		qa_id = question_id
 		
 		return {
 			'image': img,
@@ -466,5 +467,6 @@ class PlotDataset(Dataset):
 			'text_types': torch.as_tensor(text_types, dtype=torch.float),
 			'id' : image_name,
 			'roi_feats' : roi_feats,
-			'template_id': qa_template_id
+			'template_id': qa_template_id,
+			'question_id':idx
 		}

@@ -38,12 +38,23 @@ def load_models(models, params, load_model_dir):
 
     return models
 
+def normalize_att_image(att_image):
+
+    min_val = np.min(att_image)
+    max_val = np.max(att_image)
+
+    scale = float(max_val - min_val)
+
+    return (att_image - min_val) / scale
+
 def visualize_global_img_attn(params, attn_img_emb, rgb_image, out_img_name, alpha = 0.5):
     attention_image = skimage.transform.pyramid_expand(attn_img_emb.reshape(14, 14), upscale = 32, multichannel = False).reshape(448, 448, 1)
+    attention_image = normalize_att_image(attention_image)
     final_attention_image = alpha*rgb_image + (1-alpha)*attention_image
     
     out_image_path = os.path.join(params['vis_dir'], out_img_name)
     io.imsave(out_image_path, final_attention_image)
+    return final_attention_image
 
 def visualize_text_attn(dataset, idx, params, attn_text, rgb_image, out_img_name, alpha = 0.5):
     attention_image = np.zeros((448, 448))
@@ -72,12 +83,13 @@ def visualize_text_attn(dataset, idx, params, attn_text, rgb_image, out_img_name
 
     count = np.maximum(1, count)
     attention_image = np.divide(attention_image, count)
-
     attention_image = attention_image.reshape(448, 448, 1)
+    attention_image = normalize_att_image(attention_image)
     final_attention_image = alpha*rgb_image + (1-alpha)*attention_image
     
     out_image_path = os.path.join(params['vis_dir'], out_img_name)
     io.imsave(out_image_path, final_attention_image)
+    return final_attention_image
 
 def visualize_roi_attn(dataset, idx, params, attn_roi, rgb_image, out_img_name, alpha = 0.5):
     attention_image = np.zeros((448, 448))
@@ -90,6 +102,9 @@ def visualize_roi_attn(dataset, idx, params, attn_roi, rgb_image, out_img_name, 
     print (mt)
     EPS = 1e-20
 
+    print(attn_roi)
+    print(np.sum(attn_roi, axis=1))
+    
     bidx = 0
     for br in mt['bars']['bboxes']:
         for box in br:
@@ -108,11 +123,12 @@ def visualize_roi_attn(dataset, idx, params, attn_roi, rgb_image, out_img_name, 
     attention_image = np.divide(attention_image, count)
 
     attention_image = attention_image.reshape(448, 448, 1)
+    attention_image = normalize_att_image(attention_image)
     final_attention_image = alpha*rgb_image + (1-alpha)*attention_image
     
     out_image_path = os.path.join(params['vis_dir'], out_img_name)
     io.imsave(out_image_path, final_attention_image)
-
+    return final_attention_image
 
 def visualize_model(models, dataset, params, extra_params, idx):
     
@@ -303,13 +319,21 @@ def visualize_model(models, dataset, params, extra_params, idx):
         rgba_image = io.imread(inp_image_path)
         rgb_image = skimage.color.rgba2rgb(rgba_image)
 
+        att1_final_img = np.zeros((448, 448, 3))
+        att2_final_img = np.zeros((448, 448, 3))
+        norm_factor = 0
+
         # Visualize img_emb
         if not (params['use_roi'] or params['load_roi']):
             # Attention is computed over the global image features
             out_img_name_1 = ids[0] + '_attn_1_img_emb.png'
             out_img_name_2 = ids[0] + '_attn_2_img_emb.png'
-            visualize_global_img_attn(params, attn_1_img_emb, rgb_image, out_img_name_1)
-            visualize_global_img_attn(params, attn_2_img_emb, rgb_image, out_img_name_2)
+            att1_img = visualize_global_img_attn(params, attn_1_img_emb, rgb_image, out_img_name_1)
+            att2_img = visualize_global_img_attn(params, attn_2_img_emb, rgb_image, out_img_name_2)
+            
+            att1_final_img += att1_img
+            att2_final_img += att2_img
+            norm_factor += 1            
         else:
             # Attention is computed over the ROI features
             if params['use_pos']:
@@ -318,8 +342,11 @@ def visualize_model(models, dataset, params, extra_params, idx):
                 pos = ''
             out_img_name_1 = ids[0] + '_attn_1_roi_' + pos + 'emb.png'
             out_img_name_2 = ids[0] + '_attn_2_roi_' + pos + 'emb.png'
-            visualize_roi_attn(dataset, idx, params, attn_1_img_emb, rgb_image, out_img_name_1)
-            visualize_roi_attn(dataset, idx, params, attn_2_img_emb, rgb_image, out_img_name_2)
+            att1_roi_img = visualize_roi_attn(dataset, idx, params, attn_1_img_emb, rgb_image, out_img_name_1)
+            att2_roi_img = visualize_roi_attn(dataset, idx, params, attn_2_img_emb, rgb_image, out_img_name_2)
+            att1_final_img += att1_roi_img
+            att2_final_img += att2_roi_img
+            norm_factor += 1
 
         # Visualize text_emb
         if params['use_text']:
@@ -329,20 +356,28 @@ def visualize_model(models, dataset, params, extra_params, idx):
                 pos = ''
             out_img_name_1 = ids[0] + '_attn_1_text_' + pos + 'emb.png'
             out_img_name_2 = ids[0] + '_attn_2_text_' + pos + 'emb.png'
-            visualize_text_attn(dataset, idx, params, attn_1_text, rgb_image, out_img_name_1)
-            visualize_text_attn(dataset, idx, params, attn_2_text, rgb_image, out_img_name_2)
+            att1_text_img = visualize_text_attn(dataset, idx, params, attn_1_text, rgb_image, out_img_name_1)
+            att2_text_img = visualize_text_attn(dataset, idx, params, attn_2_text, rgb_image, out_img_name_2)
+            att1_final_img += att1_text_img
+            att2_final_img += att2_text_img
+            norm_factor += 1
 
         # Visualize global_img_emb
         if params['use_global_img']:
             # Attention is computed over the global image features
             out_img_name_1 = ids[0] + '_attn_1_global_img_emb.png'
             out_img_name_2 = ids[0] + '_attn_2_global_img_emb.png'
-            visualize_global_img_attn(params, attn_1_global_img, rgb_image, out_img_name_1)
-            visualize_global_img_attn(params, attn_2_global_img, rgb_image, out_img_name_2)
+            att1_global_img = visualize_global_img_attn(params, attn_1_global_img, rgb_image, out_img_name_1)
+            att2_global_img = visualize_global_img_attn(params, attn_2_global_img, rgb_image, out_img_name_2)
+            att1_final_img += att_1_global_img
+            att2_final_img += att2_global_img
+            norm_factor += 1
+
+        out_image_path = os.path.join(params['vis_dir'], '{}_{}_att1_final.png'.format(ids[0], idx))
+        io.imsave(out_image_path, normalize_att_image(att1_final_img))
+
+        out_image_path = os.path.join(params['vis_dir'], '{}_{}_att2_final.png'.format(ids[0], idx))
+        io.imsave(out_image_path, normalize_att_image(att2_final_img))
 
         break
-    # accuracies.extend( output_preds ==  answers.detach().numpy())
-    # print('Interim Val Accurracy: %.4f' % (np.mean(accuracies)))
-
-    # with open(os.path.join(params['checkpoint_path'], '{}_acc.json'.format(params['split'])), 'w') as f:
-    #     print('Val Accurracy: %.4f' % (np.mean(accuracies)))        
+    

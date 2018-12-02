@@ -64,6 +64,9 @@ def eval_model(models, dataset, params, extra_params):
 		category_accuracies[ct_id] = {}
 		category_accuracies[ct_id]['correct'] = 0
 		category_accuracies[ct_id]['total'] = 0
+		category_accuracies[ct_id]['correct_ids'] = []
+		category_accuracies[ct_id]['incorrect_ids'] = []
+
 
 	# Call train() on all models for training
 	for m in models:
@@ -88,6 +91,7 @@ def eval_model(models, dataset, params, extra_params):
 		text_vals = batch['text_vals']
 		text_types = batch['text_types']
 		ids = batch['id']
+		question_id = batch['question_id']
 		template_ids = batch['template_id']
 		if params['load_roi']:
 			roi_feats = batch['roi_feats']
@@ -105,6 +109,7 @@ def eval_model(models, dataset, params, extra_params):
 		text_bboxes = text_bboxes[sort_idxes]
 		text_vals = text_vals[sort_idxes]
 		text_types = text_types[sort_idxes]
+		question_id = question_id[sort_idxes]
 		ids = [ids[i] for i in sort_idxes]
 		template_ids = template_ids[sort_idxes]
 
@@ -195,7 +200,12 @@ def eval_model(models, dataset, params, extra_params):
 
 			if ch:
 				category_accuracies[template_ids[i].item()]['correct'] += 1
+				category_accuracies[template_ids[i].item()]['correct_ids'] += [question_id[i].item()]
+			else:
+				category_accuracies[template_ids[i].item()]['incorrect_ids'] += [question_id[i].item()]
 			category_accuracies[template_ids[i].item()]['total'] += 1
+
+
 
 		accuracies.extend( check )
 		print('Interim Val Accurracy: %.4f' % (np.mean(accuracies)))
