@@ -13,6 +13,7 @@ import h5py
 
 import skimage
 from skimage import io
+from skimage import transform
 
 def load_models(models, params, load_model_dir):
 
@@ -48,7 +49,7 @@ def normalize_att_image(att_image):
     return (att_image - min_val) / scale
 
 def visualize_global_img_attn(params, attn_img_emb, rgb_image, out_img_name, alpha = 0.5):
-    attention_image = skimage.transform.pyramid_expand(attn_img_emb.reshape(14, 14), upscale = 32, multichannel = False).reshape(448, 448, 1)
+    attention_image = transform.pyramid_expand(attn_img_emb.reshape(14, 14), upscale = 32, multichannel = False).reshape(448, 448, 1)
     attention_image = normalize_att_image(attention_image)
     final_attention_image = alpha*rgb_image + (1-alpha)*attention_image
     
@@ -104,7 +105,7 @@ def visualize_roi_attn(dataset, idx, params, attn_roi, rgb_image, out_img_name, 
 
     print(attn_roi)
     print(np.sum(attn_roi, axis=1))
-    
+
     bidx = 0
     for br in mt['bars']['bboxes']:
         for box in br:
